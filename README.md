@@ -11,7 +11,7 @@ This implementation has **strict** requirements due to dependencies on other lib
 ## Hardware
 
 * OS: Ubuntu 20.04
-* NVIDIA GPU with Compute Compatibility >= 75 (>= RTX 2060), CUDA 11.3 (might work with older version)
+* NVIDIA GPU with Compute Compatibility >= 75 and memory > 8GB (Tested with RTX 2080 Ti), CUDA 11.3 (might work with older version)
 
 ## Software
 
@@ -35,15 +35,19 @@ More options can be found in [opt.py](opt.py). Currently only blender dataset is
 
 # Comparison with torch-ngp
 
-I compared the quality v.s. the concurrent work torch-ngp (default settings):
+I compared the quality v.s. the concurrent work torch-ngp (default settings), both trained for about 5 minutes:
 
 | test PSNR | mic   | ficus | chair | hotdog | materials | drums | ship  | lego  | AVG   |
 | :---:     | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
 | torch-ngp | 34.48 | 30.57 | 32.16 | 36.21  | 28.17     | 24.04 | 31.18 | 34.88 | 31.46 |
-| mine      | 34.51 | 32.70 | 34.37 | 36.75  | 28.85     | 25.30 | 29.60 | 34.67 | 32.09 |
+| mine      | 35.00 | 33.51 | 34.46 | 35.98  | 28.77     | 25.37 | 30.27 | 34.43 | **32.22** |
+
+mine is slightly better, but the result might fluctuate across different runs.
 
 # TODO
 
 [ ] multi-gpu training
+
 [ ] other datasets
+
 [ ] implement compact ray to accelerate inference
