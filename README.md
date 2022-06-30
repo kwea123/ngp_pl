@@ -31,7 +31,7 @@ A one line quickstart: `python train.py --root_dir <path/to/lego> --exp_name leg
 
 It will train the lego scene for 20k steps (each step with 8192 rays), and perform one testing at the end. The whole process should finish within about 5 minutes.
 
-More options can be found in [opt.py](opt.py). Currently one can only train blender dataset.
+More options can be found in [opt.py](opt.py). Currently only blender dataset is supported.
 
 # Comparison with torch-ngp
 
