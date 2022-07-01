@@ -1,6 +1,8 @@
 # ngp_pl
 Instant-ngp in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). I hope this repo can facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
 
+https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-8e7a-5613b505e54a.mp4
+
 *  [Official CUDA implementation](https://github.com/NVlabs/instant-ngp/tree/master)
 *  [torch-ngp](https://github.com/ashawkey/torch-ngp) another pytorch implementation that I highly referenced.
 
