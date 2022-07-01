@@ -31,7 +31,7 @@ A one line quickstart: `python train.py --root_dir <path/to/lego> --exp_name leg
 
 It will train the lego scene for 20k steps (each step with 8192 rays), and perform one testing at the end. The whole process should finish within about 5 minutes.
 
-More options can be found in [opt.py](opt.py). Currently only blender dataset is supported.
+More options can be found in [opt.py](opt.py). Currently only nerf-synthetic dataset is supported.
 
 # Comparison with torch-ngp
 
@@ -40,7 +40,7 @@ I compared the quality v.s. the concurrent work torch-ngp (default settings), bo
 | test PSNR | mic   | ficus | chair | hotdog | materials | drums | ship  | lego  | AVG   |
 | :---:     | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
 | torch-ngp | 34.48 | 30.57 | 32.16 | 36.21  | 28.17     | 24.04 | 31.18 | 34.88 | 31.46 |
-| mine      | 35.00 | 33.51 | 34.46 | 35.98  | 28.77     | 25.37 | 30.27 | 34.43 | **32.22** |
+| mine      | 35.00 | 33.51 | 34.40 | 36.60  | 28.91     | 25.37 | 30.27 | 34.64 | **32.34** |
 
 mine is slightly better, but the result might fluctuate across different runs.
 
