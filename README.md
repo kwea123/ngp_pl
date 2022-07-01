@@ -44,6 +44,13 @@ I compared the quality v.s. the concurrent work torch-ngp (default settings), bo
 
 mine is slightly better, but the result might fluctuate across different runs.
 
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/11364490/176800109-38eb35f3-e145-4a09-8304-1795e3a4e8cd.png", width="45%">
+  <img src="https://user-images.githubusercontent.com/11364490/176800106-fead794f-7e70-4459-b99e-82725fe6777e.png", width="45%">
+  <br>
+  <sup>Left: torch-ngp. Right: mine.</sup>
+</p>
+
 # TODO
 
 [ ] multi-gpu training
