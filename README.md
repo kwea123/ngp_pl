@@ -1,5 +1,5 @@
 # ngp_pl
-Instant-ngp in pytorch+cuda trained with pytorch-lightning (with only few lines of code and clear comments)
+Instant-ngp in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). I hope this repo can facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
 
 *  [Official CUDA implementation](https://github.com/NVlabs/instant-ngp/tree/master)
 *  [torch-ngp](https://github.com/ashawkey/torch-ngp) another pytorch implementation that I highly referenced.
@@ -25,24 +25,32 @@ This implementation has **strict** requirements due to dependencies on other lib
 
 * Cuda extension: Run `pip install models/csrc/ --use-feature=in-tree-build`
 
+# :books: Data preparation
+
+Download `nerf_synthetic.zip` from [here](https://drive.google.com/drive/folders/128yBriW1IG_3NJ5Rp7APSTZsJqdJdfc1)
+
 # :key: Training
 
-A one line quickstart: `python train.py --root_dir <path/to/lego> --exp_name lego`
+Quickstart: `python train.py --root_dir <path/to/lego> --exp_name lego`
 
-It will train the lego scene for 20k steps (each step with 8192 rays), and perform one testing at the end. The whole process should finish within about 5 minutes.
+It will train the lego scene for 20k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow).
 
 More options can be found in [opt.py](opt.py). Currently only nerf-synthetic dataset is supported.
 
 # Comparison with torch-ngp
 
-I compared the quality v.s. the concurrent work torch-ngp (default settings), both trained for about 5 minutes:
+I compared the quality v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
 
-| test PSNR | mic   | ficus | chair | hotdog | materials | drums | ship  | lego  | AVG   |
-| :---:     | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
-| torch-ngp | 34.48 | 30.57 | 32.16 | 36.21  | 28.17     | 24.04 | 31.18 | 34.88 | 31.46 |
-| mine      | 35.00 | 33.51 | 34.40 | 36.60  | 28.91     | 25.37 | 30.27 | 34.64 | **32.34** |
+| test PSNR | split | mic   | ficus | chair | hotdog | materials | drums | ship  | lego  | AVG   |
+| :---:     | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
+| torch-ngp | train | 34.48 | 30.57 | 32.16 | 36.21 | 28.17 | 24.04 | 31.18 | 34.88 | 31.46 |
+| mine | train | 35.00 | 33.51 | 34.40 | 36.60 | 28.91 | 25.37 | 30.27 | 34.64 | 32.34 |
+| instant-ngp paper | all? | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 |
+| *mine | trainval | 35.07 | 34.07 | 34.75 | 37.44 | 29.65 | 26.31 | 31.16 | 35.73 | 33.02 |
 
-mine is slightly better, but the result might fluctuate across different runs.
+mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
+
+*: use with `hard_sampling` to train more on difficult rays.
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/11364490/176800109-38eb35f3-e145-4a09-8304-1795e3a4e8cd.png", width="45%">
@@ -53,8 +61,8 @@ mine is slightly better, but the result might fluctuate across different runs.
 
 # TODO
 
-[ ] multi-gpu training
+- [ ] multi-gpu training
 
-[ ] other datasets
+- [ ] other datasets
 
-[ ] implement compact ray to accelerate inference
+- [ ] implement compact ray to accelerate inference
