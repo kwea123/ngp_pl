@@ -1,5 +1,5 @@
 # ngp_pl
-Instant-ngp in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). I hope this repo can facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
+Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). I hope this repo can facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
 
 https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-8e7a-5613b505e54a.mp4
 
@@ -20,7 +20,7 @@ This implementation has **strict** requirements due to dependencies on other lib
 * Clone this repo by `git clone https://github.com/kwea123/nerf_pl`
 * Python>=3.8 (installation via [anaconda](https://www.anaconda.com/distribution/) is recommended, use `conda create -n ngp_pl python=3.8` to create a conda environment and activate it by `conda activate ngp_pl`)
 * Python libraries
-    * Install pytorch by `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu113`
+    * Install pytorch (1.11.0) by `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu113`
     * Install `tinycudann` following their [instruction](https://github.com/NVlabs/tiny-cuda-nn#requirements) (compilation and pytorch extension)
     * Install `apex` following their [instruction](https://github.com/NVIDIA/apex#linux)
     * Install core requirements by `pip install -r requirements.txt`
@@ -48,11 +48,11 @@ I compared the quality v.s. the concurrent work torch-ngp (default settings) and
 | torch-ngp | train | 34.48 | 30.57 | 32.16 | 36.21 | 28.17 | 24.04 | 31.18 | 34.88 | 31.46 |
 | mine | train | 35.00 | 33.51 | 34.40 | 36.60 | 28.91 | 25.37 | 30.27 | 34.64 | 32.34 |
 | instant-ngp paper | all? | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 |
-| *mine | trainval | 35.07 | 34.07 | 34.75 | 37.44 | 29.65 | 26.31 | 31.16 | 35.73 | 33.02 |
+| *mine | trainval | 36.30 | 34.75 | 35.34 | 37.86 | 29.90 | 26.37 | 31.16 | 35.86 | **33.44** |
 
 mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
 
-*: use with `hard_sampling` to train more on difficult rays.
+*: used with `hard_sampling` to train more on difficult rays (1-2min slower).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/11364490/176800109-38eb35f3-e145-4a09-8304-1795e3a4e8cd.png", width="45%">
