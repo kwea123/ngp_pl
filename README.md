@@ -1,5 +1,5 @@
 # ngp_pl
-Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). I hope this repo can facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
+Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). This repo aims at providing a concise pytorch interface to facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
 
 https://user-images.githubusercontent.com/11364490/177025079-cb92a399-2600-4e10-94e0-7cbe09f32a6f.mp4
 
@@ -10,7 +10,7 @@ https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-
 
 # :computer: Installation
 
-This implementation has **strict** requirements due to dependencies on other libraries, if you encounter installation problem due to hardware/software mismatch, I'm afraid there is **no intention** to make the support for different platform currently.
+This implementation has **strict** requirements due to dependencies on other libraries, if you encounter installation problem due to hardware/software mismatch, I'm afraid there is **no intention** to support different platforms (you are welcomed to contribute).
 
 ## Hardware
 
@@ -43,14 +43,14 @@ More options can be found in [opt.py](opt.py).
 
 # Comparison with torch-ngp and the paper
 
-I compared the quality (testing PSNR) and the inference speed (on `Lego` scene) v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
+I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the inference speed (on `Lego` scene) v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
 
-|    | split | Mic   | Ficus | Chair | Hotdog | Materials | Drums | Ship  | Lego  | AVG   | FPS | 
-| :---:     | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: | :---: |
-| torch-ngp | train | 34.48 | 30.57 | 32.16 | 36.21 | 28.17 | 24.04 | 31.18 | 34.88 | 31.46 | 7.8 |
-| mine | train | 35.00 | 33.51 | 34.40 | 36.60 | 28.91 | 25.37 | 30.27 | 34.98 | **32.32** | **31** |
-| instant-ngp paper | all? | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 | 60 |
-| *mine | trainval | 36.30 | 34.75 | 35.34 | 37.86 | 29.90 | 26.37 | 31.16 | 35.86 | **33.44** | 31 |
+| Method    | split | avg PSNR | FPS   | 
+| :---:     | :---: | :---:    | :---: |
+| torch-ngp | train | 31.46    | 7.8   |
+| mine      | train | 32.38    | **31** |
+| instant-ngp paper | all? | 33.18 | 60 |
+| *mine | trainval | **33.44** | 31 |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
 
@@ -64,6 +64,33 @@ As for speed, mine is faster than torch-ngp, but is still only half fast as inst
   <br>
   <sup>Left: torch-ngp. Right: mine.</sup>
 </p>
+
+More details are in the following section.
+
+# Benchmarks
+
+To run benchmarks, use the scripts under `benchmarking`.
+
+Followings are my results:
+
+<details>
+  <summary>Synthetic-NeRF</summary>
+
+| Mic   | Ficus | Chair | Hotdog | Materials | Drums | Ship  | Lego  | AVG   |
+| :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
+| 35.23 | 33.64 | 34.78 | 36.76 | 28.77 | 25.61 | 29.57 | 34.69 | 32.38 |
+
+</details>
+
+<details>
+  <summary>Synthetic-NSVF</summary>
+
+| Wineholder | Steamtrain | Toad | Robot | Bike | Palace | Spaceship | Lifestyle | AVG | 
+| :---: | :---: | :---: | :---: | :---:  | :---:  | :---: | :---: | :---: |
+| 31.06 | 35.65 | 34.49 | 36.23 | 36.99 | 36.36 | 35.48 | 33.96 | 35.03 |
+
+</details>
+
 
 # TODO
 
