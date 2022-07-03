@@ -49,7 +49,7 @@ I compared the quality (testing PSNR) and the inference speed (on `Lego` scene) 
 | :---:     | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: | :---: |
 | torch-ngp | train | 34.48 | 30.57 | 32.16 | 36.21 | 28.17 | 24.04 | 31.18 | 34.88 | 31.46 | 7.8 |
 | mine | train | 35.00 | 33.51 | 34.40 | 36.60 | 28.91 | 25.37 | 30.27 | 34.98 | **32.32** | **31** |
-| instant-ngp paper | all? | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 | 60 |
+| instant-ngp paper | train | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 | 60 |
 | *mine | trainval | 36.30 | 34.75 | 35.34 | 37.86 | 29.90 | 26.37 | 31.16 | 35.86 | **33.44** | 31 |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
