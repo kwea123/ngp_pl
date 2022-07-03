@@ -48,7 +48,7 @@ I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the infere
 | Method    | avg PSNR | FPS   | 
 | :---:     | :---:    | :---: |
 | torch-ngp | 31.46    | 7.8   |
-| mine      | 32.38    | 31 |
+| mine      | 32.38    | 36.2 |
 | instant-ngp paper | **33.18** | **60** |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs.
@@ -73,18 +73,40 @@ Followings are my results:
 <details>
   <summary>Synthetic-NeRF</summary>
 
-| Mic   | Ficus | Chair | Hotdog | Materials | Drums | Ship  | Lego  | AVG   |
-| :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
-| 35.23 | 33.64 | 34.78 | 36.76 | 28.77 | 25.61 | 29.57 | 34.69 | 32.38 |
+|       | Mic   | Ficus | Chair | Hotdog | Materials | Drums | Ship  | Lego  | AVG   |
+| :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
+| PSNR  | 35.23 | 33.64 | 34.78 | 36.76  | 28.77     | 25.61 | 29.57 | 34.69 | 32.38 |
+| FPS   | 40.81 | 34.02 | 49.80 | 25.06  | 20.08     | 37.77 | 15.77 | 36.20 | 32.44 |
 
 </details>
 
 <details>
   <summary>Synthetic-NSVF</summary>
 
-| Wineholder | Steamtrain | Toad | Robot | Bike | Palace | Spaceship | Lifestyle | AVG | 
-| :---: | :---: | :---: | :---: | :---:  | :---:  | :---: | :---: | :---: |
-| 31.06 | 35.65 | 34.49 | 36.23 | 36.99 | 36.36 | 35.48 | 33.96 | 35.03 |
+|       | Wineholder | Steamtrain | Toad | Robot | Bike | Palace | Spaceship | Lifestyle | AVG | 
+| :---: | :---: | :---: | :---: | :---: | :---:  | :---:  | :---: | :---: | :---: |
+| PSNR  | 31.06 | 35.65 | 34.49 | 36.23 | 36.99 | 36.36 | 35.48 | 33.96 | 35.03 |
+| FPS   | 47.07 | 75.17 | 50.42 | 64.87 | 66.88 | 28.62 | 35.55 | 22.84 | 48.93 |
+
+</details>
+
+<details>
+  <summary>Tanks and Temples</summary>
+
+       | Ignatius | Truck | Barn | Caterpillar | Family | AVG   | 
+|:---: | :---:    | :---: | :---: | :---:      | :---:  | :---: |
+| PSNR |          |       |       |            |        |       |
+| FPS  |          |       |       |            |        |       |
+
+</details>
+
+<details>
+  <summary>BlendedMVS</summary>
+
+       | Jade  | Fountain | Character | Statues | AVG   | 
+|:---: | :---: | :---:    | :---:     | :---:   | :---: |
+| PSNR |       |          |           |         |       |
+| FPS  |       |          |           |         |       |
 
 </details>
 
