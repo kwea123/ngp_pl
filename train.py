@@ -31,7 +31,6 @@ import warnings; warnings.filterwarnings("ignore")
 
 
 def depth2img(depth):
-    depth = np.clip(depth, 1.6, 10000) # TODO: tuned for nerf-synthetic...
     depth = (depth-depth.min())/(depth.max()-depth.min())
     depth_img = cv2.applyColorMap((depth*255).astype(np.uint8),
                                   cv2.COLORMAP_TURBO)
@@ -64,7 +63,7 @@ class NeRFSystem(LightningModule):
     def setup(self, stage):
         dataset = dataset_dict[hparams.dataset_name]
         kwargs = {'root_dir': hparams.root_dir,
-                  'img_wh': tuple(hparams.img_wh)}
+                  'downsample': hparams.downsample}
         self.train_dataset = dataset(split=hparams.split, **kwargs)
         self.test_dataset = dataset(split='test', **kwargs)
 
@@ -128,13 +127,11 @@ class NeRFSystem(LightningModule):
         log = {'psnr': psnr(results['rgb'], rgb_gt)}
 
         if not hparams.no_save_test: # save test image to disk
-            rgb_pred = results['rgb'].reshape(hparams.img_wh[0], hparams.img_wh[1], 3) \
-                                     .cpu().numpy()
+            w, h = self.train_dataset.img_wh
+            rgb_pred = results['rgb'].reshape(h, w, 3).cpu().numpy()
             log['rgb'] = rgb_pred = (rgb_pred*255).astype(np.uint8)
             log['depth'] = depth = \
-                depth2img(results['depth'].reshape(hparams.img_wh[0],
-                                                   hparams.img_wh[1])
-                          .cpu().numpy())
+                depth2img(results['depth'].reshape(h, w).cpu().numpy())
             imageio.imsave(os.path.join(self.val_dir, f'{batch_nb:03d}.png'), rgb_pred)
             imageio.imsave(os.path.join(self.val_dir, f'{batch_nb:03d}_d.png'), depth)
 

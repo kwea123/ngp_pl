@@ -1,3 +1,4 @@
-from .nerf_synthetic import NeRFSyntheticDataset
+from .nsvf import NSVFDataset
 
-dataset_dict = {'nerf-synthetic': NeRFSyntheticDataset}
+
+dataset_dict = {'nsvf': NSVFDataset}

@@ -5,14 +5,14 @@ def get_opts():
 
     parser.add_argument('--root_dir', type=str, required=True,
                         help='root directory of dataset')
-    parser.add_argument('--dataset_name', type=str, default='nerf-synthetic',
-                        choices=['nerf-synthetic'],
+    parser.add_argument('--dataset_name', type=str, default='nsvf',
+                        choices=['nsvf'],
                         help='which dataset to train/test')
     parser.add_argument('--split', type=str, default='train',
                         choices=['train', 'trainval'],
                         help='use which split to train')
-    parser.add_argument('--img_wh', nargs="+", type=int, default=[800, 800],
-                        help='resolution (img_w, img_h) of the image')
+    parser.add_argument('--downsample', type=float, default=1.0,
+                        help='downsample factor (<=1.0) for the images')
 
     parser.add_argument('--scale', type=float, default=1.0,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
@@ -33,7 +33,7 @@ def get_opts():
     # parser.add_argument('--weight_path', type=str, default=None,
     #                     help='pretrained model weight to load (do not load optimizers, etc)')
 
-    parser.add_argument('--lr', type=float, default=1e-2,
+    parser.add_argument('--lr', type=float, default=3e-3,
                         help='learning rate')
 
     parser.add_argument('--exp_name', type=str, default='exp',
