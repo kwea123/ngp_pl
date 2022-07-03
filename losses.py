@@ -14,7 +14,7 @@ class NeRFLoss(nn.Module):
         d['rgb'] = reduce((results['rgb']-rgbs)**2, 'n c -> n', 'mean')
 
         o = results['opacity']+1e-8
-        # encourage opacity to be either 0 or 1
+        # encourage opacity to be either 0 or 1 to avoid floater
         d['opacity'] = self.lambda_opa*(-o*torch.log(o))
 
         return d
