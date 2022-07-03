@@ -44,7 +44,7 @@ __global__ void composite_train_fw_kernel(
     }
 
     opacity[ray_idx] = op;
-    depth[ray_idx] = d;// + INF*(1-op); // TODO: change to depth where w exceeds some threshold...
+    depth[ray_idx] = d;
     rgb[ray_idx][0] = r + rgb_bg[0]*(1-op);
     rgb[ray_idx][1] = g + rgb_bg[1]*(1-op);
     rgb[ray_idx][2] = b + rgb_bg[2]*(1-op);
