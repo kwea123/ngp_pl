@@ -70,7 +70,7 @@ class RayMarcher(torch.autograd.Function):
         deltas = deltas[:total_samples]
         ts = ts[:total_samples]
 
-        return rays_a, xyzs, dirs, deltas, ts, total_samples
+        return rays_a, xyzs, dirs, deltas, ts
 
 
 class VolumeRenderer(torch.autograd.Function):
