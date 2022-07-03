@@ -48,15 +48,12 @@ I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the infere
 | Method    | split | avg PSNR | FPS   | 
 | :---:     | :---: | :---:    | :---: |
 | torch-ngp | train | 31.46    | 7.8   |
-| mine      | train | 32.38    | **31** |
-| instant-ngp paper | all? | 33.18 | 60 |
-| *mine | trainval | **33.44** | 31 |
+| mine      | train | 32.38    | 31 |
+| instant-ngp paper | train | **33.18** | **60** |
 
-As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
+As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs.
 
 As for speed, mine is faster than torch-ngp, but is still only half fast as instant-ngp. Speed is dependent on the scene (if most of the scene is empty, speed will be faster).
-
-*: used with `hard_sampling` to train more on difficult rays (1-2min slower).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/11364490/176800109-38eb35f3-e145-4a09-8304-1795e3a4e8cd.png", width="45%">
