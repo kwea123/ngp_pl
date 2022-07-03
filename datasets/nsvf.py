@@ -21,7 +21,7 @@ class NSVFDataset(BaseDataset):
         xyz_min, xyz_max = \
             np.loadtxt(os.path.join(root_dir, 'bbox.txt'))[:6].reshape(2, 3)
         self.shift = (xyz_max+xyz_min)/2
-        self.scale = (xyz_max-xyz_min).max()/2 * 1.05 # enlarge a little
+        self.scale = (xyz_max-xyz_min).max()/2 * 1.1 # enlarge a little
 
         if 'Synthetic' in root_dir:
             with open(os.path.join(root_dir, 'intrinsics.txt')) as f:
