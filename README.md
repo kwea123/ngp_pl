@@ -45,11 +45,11 @@ More options can be found in [opt.py](opt.py).
 
 I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the inference speed (on `Lego` scene) v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
 
-| Method    | split | avg PSNR | FPS   | 
-| :---:     | :---: | :---:    | :---: |
-| torch-ngp | train | 31.46    | 7.8   |
-| mine      | train | 32.38    | 31 |
-| instant-ngp paper | train | **33.18** | **60** |
+| Method    | avg PSNR | FPS   | 
+| :---:     | :---:    | :---: |
+| torch-ngp | 31.46    | 7.8   |
+| mine      | 32.38    | 31 |
+| instant-ngp paper | **33.18** | **60** |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs.
 
