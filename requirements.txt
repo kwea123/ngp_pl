@@ -1,0 +1,10 @@
+einops==0.4.1
+kornia==0.6.5
+pytorch-lightning==1.6.4
+matplotlib==3.5.2
+imageio
+imageio-ffmpeg
+jupyter
+scipy
+pymcubes
+trimesh

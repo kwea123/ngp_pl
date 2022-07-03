@@ -37,22 +37,24 @@ Download `nerf_synthetic.zip` from [here](https://drive.google.com/drive/folders
 
 Quickstart: `python train.py --root_dir <path/to/lego> --exp_name lego`
 
-It will train the lego scene for 20k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow).
+It will train the lego scene for 20k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
 
-More options can be found in [opt.py](opt.py). Currently only nerf-synthetic dataset is supported.
+More options can be found in [opt.py](opt.py). Currently only `nerf-synthetic` dataset is supported.
 
-# Comparison with torch-ngp
+# Comparison with torch-ngp and the paper
 
-I compared the quality v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
+I compared the quality (testing PSNR) and the inference speed (on `lego` scene) v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
 
-| test PSNR | split | mic   | ficus | chair | hotdog | materials | drums | ship  | lego  | AVG   |
-| :---:     | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
-| torch-ngp | train | 34.48 | 30.57 | 32.16 | 36.21 | 28.17 | 24.04 | 31.18 | 34.88 | 31.46 |
-| mine | train | 35.00 | 33.51 | 34.40 | 36.60 | 28.91 | 25.37 | 30.27 | 34.64 | 32.34 |
-| instant-ngp paper | all? | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 |
-| *mine | trainval | 36.30 | 34.75 | 35.34 | 37.86 | 29.90 | 26.37 | 31.16 | 35.86 | **33.44** |
+|    | split | mic   | ficus | chair | hotdog | materials | drums | ship  | lego  | AVG   | FPS | 
+| :---:     | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: | :---: |
+| torch-ngp | train | 34.48 | 30.57 | 32.16 | 36.21 | 28.17 | 24.04 | 31.18 | 34.88 | 31.46 | 7.8 |
+| mine | train | 35.00 | 33.51 | 34.40 | 36.60 | 28.91 | 25.37 | 30.27 | 34.53 | **32.32** | **31** |
+| instant-ngp paper | all? | 36.22 | 33.51 | 35.00 | 37.40 | 29.78 | 26.02 | 31.10 | 36.39 | 33.18 | 60 |
+| *mine | trainval | 36.30 | 34.75 | 35.34 | 37.86 | 29.90 | 26.37 | 31.16 | 35.86 | **33.44** | 31 |
 
-mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
+As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs. Using `trainval` set, mine almost matches the paper.
+
+As for speed, mine is faster than torch-ngp, but is still only half fast as instant-ngp. Speed is dependent on the scene (if most of the scene is empty, speed will be faster).
 
 *: used with `hard_sampling` to train more on difficult rays (1-2min slower).
 
@@ -65,8 +67,6 @@ mine is slightly better than torch-ngp, but the result might fluctuate across di
 
 # TODO
 
-- [ ] multi-gpu training
+- [ ] test multi-gpu training
 
-- [ ] other datasets
-
-- [ ] implement compact ray to accelerate inference
+- [ ] support other datasets
