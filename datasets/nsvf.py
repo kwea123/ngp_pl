@@ -60,28 +60,42 @@ class NSVFDataset(BaseDataset):
             self.rays = self.read_meta(split)
 
     def read_meta(self, split):
-        if split == 'train': prefix = '0_'
-        elif split == 'val': prefix = '1_'
-        elif 'Synthetic' in self.root_dir: prefix = '2_'
-        else: prefix = '1_' # test set for real scenes
-        imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
-        poses = sorted(glob.glob(os.path.join(self.root_dir, 'pose', prefix+'*.txt')))
-
         rays = {} # {frame_idx: ray tensor}
-        for idx, (img, pose) in enumerate(zip(imgs, poses)):
-            c2w = np.loadtxt(pose)[:3]
-            c2w[:, 1:3] *= -1 # [right down front] to [right up back]
-            c2w[:, 3] -= self.shift
-            c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
-            rays_o, rays_d = get_rays(self.directions, torch.FloatTensor(c2w))
 
-            img = Image.open(img)
-            img = img.resize(self.img_wh, Image.LANCZOS)
-            img = self.transform(img) # (c, h, w)
-            img = rearrange(img, 'c h w -> (h w) c')
-            if img.shape[-1] == 4:
-                img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
+        if split == 'test_traj': # BlendedMVS and TanksAndTemple
+            poses = np.loadtxt(os.path.join(self.root_dir, 'test_traj.txt'))
+            poses = poses.reshape(-1, 4, 4)
+            for idx, pose in enumerate(poses):
+                c2w = pose[:3]
+                c2w[:, :3] *= -1 # [left down front] to [right up back]
+                c2w[:, 3] -= self.shift
+                c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
+                rays_o, rays_d = get_rays(self.directions, torch.FloatTensor(c2w))
 
-            rays[idx] = torch.cat([rays_o, rays_d, img], 1) # (h*w, 9)
+                rays[idx] = torch.cat([rays_o, rays_d], 1) # (h*w, 6)
+        else:
+            if split == 'train': prefix = '0_'
+            elif split == 'val': prefix = '1_'
+            elif 'Synthetic' in self.root_dir: prefix = '2_'
+            elif split == 'test': prefix = '1_' # test set for real scenes
+            imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
+            poses = sorted(glob.glob(os.path.join(self.root_dir, 'pose', prefix+'*.txt')))
+
+            for idx, (img, pose) in enumerate(zip(imgs, poses)):
+                c2w = np.loadtxt(pose)[:3]
+                c2w[:, 1:3] *= -1 # [right down front] to [right up back]
+                c2w[:, 3] -= self.shift
+                c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
+                rays_o, rays_d = get_rays(self.directions, torch.FloatTensor(c2w))
+
+                img = Image.open(img)
+                img = img.resize(self.img_wh, Image.LANCZOS)
+                img = self.transform(img) # (c, h, w)
+                img = rearrange(img, 'c h w -> (h w) c')
+                # TODO: some blendedmvs scenes have black bg...
+                if img.shape[-1] == 4:
+                    img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
+
+                rays[idx] = torch.cat([rays_o, rays_d, img], 1) # (h*w, 9)
 
         return rays
