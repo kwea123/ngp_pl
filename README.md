@@ -44,6 +44,10 @@ It will train the lego scene for 20k steps (each step with 8192 rays), and perfo
 
 More options can be found in [opt.py](opt.py).
 
+# :mag_right: Testing
+
+Use `test.ipynb` to generate images. Lego pretrained model is available [here](https://github.com/kwea123/ngp_pl/releases/tag/v1.0)
+
 # Comparison with torch-ngp and the paper
 
 I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the inference speed (on `Lego` scene) v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
