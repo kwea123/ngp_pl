@@ -9,7 +9,7 @@ class NeRFLoss(nn.Module):
 
         self.lambda_opa = 1e-3
 
-    def forward(self, results, rgbs, **kwargs):
+    def forward(self, results, rgbs):
         d = {}
         d['rgb'] = reduce((results['rgb']-rgbs)**2, 'n c -> n', 'mean')
 
