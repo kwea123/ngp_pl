@@ -3,7 +3,6 @@ from torch import nn
 import tinycudann as tcnn
 import vren
 from .custom_functions import TruncExp
-from .rendering import MAX_SAMPLES
 import numpy as np
 
 
@@ -146,8 +145,7 @@ class NGP(nn.Module):
         return cells
 
     @torch.no_grad()
-    def update_density_grid(self, warmup=False, decay=0.95,
-                            density_threshold=0.05*MAX_SAMPLES/(2*3**0.5)):
+    def update_density_grid(self, density_threshold, warmup=False, decay=0.95):
         # create temporary grid
         tmp_grid = -torch.ones_like(self.density_grid)
         if warmup: # during the first 256 steps
@@ -174,6 +172,5 @@ class NGP(nn.Module):
         self.mean_density = self.density_grid.clamp(min=0).mean().item()
 
         # pack to bitfield
-        vren.packbits(self.density_grid,
-                      min(self.mean_density, density_threshold),
+        vren.packbits(self.density_grid, min(self.mean_density, density_threshold),
                       self.density_bitfield)

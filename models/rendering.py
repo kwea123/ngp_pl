@@ -50,7 +50,6 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
            of each marching (the variable @N_samples)
     """
     results = {}
-    T_threshold = kwargs.get('T_threshold', 1e-4)
 
     # output tensors to be filled in
     N_rays = len(rays_o)
@@ -90,8 +89,8 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
 
         vren.composite_test_fw(
             sigmas, rgbs, deltas, ts,
-            hits_t[:, 0], alive_indices, T_threshold, N_eff_samples,
-            opacity, depth, rgb)
+            hits_t[:, 0], alive_indices, kwargs.get('T_threshold', 1e-4),
+            N_eff_samples, opacity, depth, rgb)
         alive_indices = alive_indices[alive_indices>=0] # remove converged rays
 
     rgb_bg = torch.ones(3, device=device) # TODO: infer env map from network
