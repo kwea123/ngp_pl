@@ -30,7 +30,7 @@ This implementation has **strict** requirements due to dependencies on other lib
     * Install `apex` following their [instruction](https://github.com/NVIDIA/apex#linux)
     * Install core requirements by `pip install -r requirements.txt`
 
-* Cuda extension: Run `pip install models/csrc/ --use-feature=in-tree-build`
+* Cuda extension: Upgrade `pip` to >= 22.1 and run `pip install models/csrc/`
 
 # :books: Data preparation
 
@@ -98,7 +98,7 @@ Followings are my results:
 
 |      | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
 |:---: | :---:    | :---: | :---: | :---:       | :---:  | :---: |
-| PSNR |          |       | 28.92 | 26.30       | 33.77  |       |
+| PSNR |          | 28.21 | 28.92 | 26.30       | 33.77  |       |
 | *FPS |          |       | 16.14 | 10.91       | 6.16   |       |
 
 *Evaluated on `test-traj`
