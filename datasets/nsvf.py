@@ -4,6 +4,7 @@ import numpy as np
 import os
 from PIL import Image
 from einops import rearrange
+from tqdm import tqdm
 
 from .ray_utils import *
 
@@ -81,7 +82,8 @@ class NSVFDataset(BaseDataset):
             imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
             poses = sorted(glob.glob(os.path.join(self.root_dir, 'pose', prefix+'*.txt')))
 
-            for idx, (img, pose) in enumerate(zip(imgs, poses)):
+            print(f'Loading {len(imgs)} {split} images ...')
+            for idx, (img, pose) in enumerate(tqdm(zip(imgs, poses))):
                 c2w = np.loadtxt(pose)[:3]
                 c2w[:, 1:3] *= -1 # [right down front] to [right up back]
                 c2w[:, 3] -= self.shift
