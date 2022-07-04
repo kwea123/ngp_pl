@@ -101,7 +101,7 @@ Followings are my results:
 | PSNR |          |       | 28.92 | 26.30       | 33.77  |       |
 | *FPS |          |       | 16.14 | 10.91       | 6.16   |       |
 
-* Evaluated on `test-traj`
+*Evaluated on `test-traj`
 
 </details>
 
@@ -113,9 +113,9 @@ Followings are my results:
 | PSNR  | 25.69  | 26.91     | 30.16     | 26.93   | 27.42 |
 | **FPS | 26.02  | 21.24     | 35.99     | 19.22   | 25.61 |
 
-* I manually switch the background from black to white, so the number isn't directly comparable to that in the papers.
+*I manually switch the background from black to white, so the number isn't directly comparable to that in the papers.
 
-** Evaluated on `test-traj`
+**Evaluated on `test-traj`
 
 </details>
 
