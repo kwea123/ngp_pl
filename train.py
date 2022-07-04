@@ -5,13 +5,14 @@ import imageio
 import numpy as np
 import cv2
 
+# data
 from torch.utils.data import DataLoader
 from datasets import dataset_dict
 
 # models
 from kornia.utils.grid import create_meshgrid3d
 from models.networks import NGP
-from models.rendering import render
+from models.rendering import render, MAX_SAMPLES
 
 # optimizer, losses
 from apex.optimizers import FusedAdam
@@ -25,6 +26,8 @@ from metrics import psnr
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
+
+from utils import slim_ckpt
 
 import warnings; warnings.filterwarnings("ignore")
 
@@ -103,7 +106,9 @@ class NeRFSystem(LightningModule):
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
-            self.model.update_density_grid(warmup=self.global_step<256)
+            a_thr = min(self.current_epoch+1, 25)/50 # alpha threshold
+            self.model.update_density_grid(a_thr*MAX_SAMPLES/(2*3**0.5),
+                                           warmup=self.global_step<256)
 
         rays, rgb = batch['rays'], batch['rgb']
         results = self(rays, split='train')
@@ -179,3 +184,7 @@ if __name__ == '__main__':
                       precision=16)
 
     trainer.fit(system, ckpt_path=hparams.ckpt_path)
+
+    # save slimmed ckpt for the last epoch
+    ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')
+    torch.save(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt', ckpt_)

@@ -23,3 +23,12 @@ def load_ckpt(model, ckpt_path, model_name='model', prefixes_to_ignore=[]):
     checkpoint_ = extract_model_state_dict(ckpt_path, model_name, prefixes_to_ignore)
     model_dict.update(checkpoint_)
     model.load_state_dict(model_dict)
+
+
+def slim_ckpt(ckpt_path):
+    ckpt = torch.load(ckpt_path)
+    # pop unused parameters
+    ckpt['state_dict'].pop('weights', None)
+    ckpt['state_dict'].pop('model.density_grid', None)
+    ckpt['state_dict'].pop('model.grid_coords', None)
+    return ckpt['state_dict']
