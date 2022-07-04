@@ -187,4 +187,4 @@ if __name__ == '__main__':
 
     # save slimmed ckpt for the last epoch
     ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')
-    torch.save(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt', ckpt_)
+    torch.save(ckpt_, f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
