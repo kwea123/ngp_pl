@@ -50,8 +50,8 @@ I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the infere
 
 | Method    | avg PSNR | FPS   | 
 | :---:     | :---:    | :---: |
-| torch-ngp | 31.46    | 7.8   |
-| mine      | 32.38    | 36.2 |
+| torch-ngp | 31.46    | 18.2  |
+| mine      | 32.38    | 36.2  |
 | instant-ngp paper | **33.18** | **60** |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs.
@@ -98,8 +98,8 @@ Followings are my results:
 
 |      | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
 |:---: | :---:    | :---: | :---: | :---:       | :---:  | :---: |
-| PSNR |          | 28.21 | 28.92 | 26.30       | 33.77  |       |
-| *FPS |          |       | 16.14 | 10.91       | 6.16   |       |
+| PSNR | 28.90    | 28.21 | 28.92 | 26.30       | 33.77  | 29.22 |
+| *FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
 
 *Evaluated on `test-traj`
 

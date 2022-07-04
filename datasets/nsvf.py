@@ -24,15 +24,18 @@ class NSVFDataset(BaseDataset):
         self.shift = (xyz_max+xyz_min)/2
         self.scale = (xyz_max-xyz_min).max()/2 * 1.05 # enlarge a little
 
-        if 'Synthetic' in root_dir: # Synthetic-NeRF or NSVF
+        if 'Synthetic' in root_dir or 'Ignatius' in root_dir:
             # hard-code fix the bound error for some scenes...
             if 'Mic' in root_dir: self.scale *= 1.2
             elif 'Lego' in root_dir: self.scale *= 1.1
             ###################################################
             with open(os.path.join(root_dir, 'intrinsics.txt')) as f:
                 fx = fy = float(f.readline().split()[0])
-            w = h = int(800*downsample)
-            fx *= w/800; fy *= h/800
+            if 'Synthetic' in root_dir:
+                w = h = int(800*downsample)
+            else:
+                w, h = int(1920*downsample), int(1080*downsample)
+            fx *= downsample; fy *= downsample
 
             K = np.float32([[fx, 0, w/2],
                             [0, fy, h/2],
@@ -64,8 +67,13 @@ class NSVFDataset(BaseDataset):
         rays = {} # {frame_idx: ray tensor}
 
         if split == 'test_traj': # BlendedMVS and TanksAndTemple
-            poses = np.loadtxt(os.path.join(self.root_dir, 'test_traj.txt'))
-            poses = poses.reshape(-1, 4, 4)
+            if 'Ignatius' in self.root_dir:
+                poses_path = \
+                    sorted(glob.glob(os.path.join(self.root_dir, 'test_pose/*.txt')))
+                poses = [np.loadtxt(p) for p in poses_path]
+            else:
+                poses = np.loadtxt(os.path.join(self.root_dir, 'test_traj.txt'))
+                poses = poses.reshape(-1, 4, 4)
             for idx, pose in enumerate(poses):
                 c2w = pose[:3]
                 c2w[:, :3] *= -1 # [left down front] to [right up back]

@@ -23,7 +23,6 @@ from metrics import psnr
 
 # pytorch-lightning
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
@@ -77,12 +76,14 @@ class NeRFSystem(LightningModule):
 
     def train_dataloader(self):
         # hard sampling (remove converged rays in training)
-        if self.current_epoch == 0:
-            self.weights = torch.ones(len(self.train_dataset.rays), device=self.device)
-        else:
-            non_converged_mask = self.weights>1e-5
-            self.train_dataset.rays = self.train_dataset.rays[non_converged_mask]
-            self.weights = self.weights[non_converged_mask]
+        if hparams.hard_sampling:
+            if self.current_epoch == 0:
+                self.register_buffer('weights',
+                        torch.ones(len(self.train_dataset.rays), device=self.device))
+            else:
+                non_converged_mask = self.weights>1e-5
+                self.train_dataset.rays = self.train_dataset.rays[non_converged_mask]
+                self.weights = self.weights[non_converged_mask]
 
         # TODO: load the data more efficiently...
         self.train_dataset.batch_size = hparams.batch_size
@@ -107,7 +108,8 @@ class NeRFSystem(LightningModule):
         rays, rgb = batch['rays'], batch['rgb']
         results = self(rays, split='train')
         loss_d = self.loss(results, rgb, **{'epoch': self.current_epoch})
-        self.weights[batch['idx']] = loss_d['rgb'].detach()
+        if hparams.hard_sampling:
+            self.weights[batch['idx']] = loss_d['rgb'].detach()
         loss = sum(lo.mean() for lo in loss_d.values())
 
         self.log('lr', self.opt.param_groups[0]['lr'])
@@ -176,4 +178,4 @@ if __name__ == '__main__':
                       num_sanity_val_steps=0,
                       precision=16)
 
-    trainer.fit(system)
+    trainer.fit(system, ckpt_path=hparams.ckpt_path)

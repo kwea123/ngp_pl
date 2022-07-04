@@ -26,10 +26,6 @@ def get_opts():
                         help='whether to hard sample rays with high loss')
     parser.add_argument('--no_save_test', action='store_true', default=False,
                         help='whether to save test image and video')
-    # parser.add_argument('--ckpt_path', type=str, default=None,
-    #                     help='pretrained checkpoint to load (including optimizers, etc)')
-    # parser.add_argument('--weight_path', type=str, default=None,
-    #                     help='pretrained model weight to load (do not load optimizers, etc)')
 
     parser.add_argument('--lr', type=float, default=3e-3,
                         help='learning rate')
@@ -38,5 +34,7 @@ def get_opts():
                         help='experiment name')
     parser.add_argument('--ckpt_freq', type=int, default=10,
                         help='how often to save checkpoint')
+    parser.add_argument('--ckpt_path', type=str, default=None,
+                        help='pretrained checkpoint to load (including optimizers, etc)')
 
     return parser.parse_args()
