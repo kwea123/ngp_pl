@@ -55,8 +55,6 @@ class NeRFSystem(LightningModule):
 
         self.S = 16 # the interval to update density grid
 
-        self.optim = FusedAdam
-
     def forward(self, rays, split):
         kwargs = {'test_time': split!='train'}
 
@@ -70,7 +68,7 @@ class NeRFSystem(LightningModule):
         self.test_dataset = dataset(split='test', **kwargs)
 
     def configure_optimizers(self):
-        self.opt = self.optim(self.model.parameters(), hparams.lr)
+        self.opt = FusedAdam(self.model.parameters(), hparams.lr)
         self.sch = CosineAnnealingLR(self.opt,
                                      hparams.num_epochs,
                                      hparams.lr/30)
@@ -88,7 +86,6 @@ class NeRFSystem(LightningModule):
                 self.train_dataset.rays = self.train_dataset.rays[non_converged_mask]
                 self.weights = self.weights[non_converged_mask]
 
-        # TODO: load the data more efficiently...
         self.train_dataset.batch_size = hparams.batch_size
         return DataLoader(self.train_dataset,
                           shuffle=True,
@@ -106,13 +103,14 @@ class NeRFSystem(LightningModule):
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
-            a_thr = min(self.current_epoch+1, 25)/50 # alpha threshold
+            # gradually increase the threshold to remove floater
+            a_thr = min(self.current_epoch+1, 25)/50 # alpha threshold, at most 0.5
             self.model.update_density_grid(a_thr*MAX_SAMPLES/(2*3**0.5),
                                            warmup=self.global_step<256)
 
         rays, rgb = batch['rays'], batch['rgb']
         results = self(rays, split='train')
-        loss_d = self.loss(results, rgb, **{'epoch': self.current_epoch})
+        loss_d = self.loss(results, rgb)
         if hparams.hard_sampling:
             self.weights[batch['idx']] = loss_d['rgb'].detach()
         loss = sum(lo.mean() for lo in loss_d.values())

@@ -82,8 +82,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
         sigmas = torch.zeros(len(xyzs), device=device)
         rgbs = torch.zeros(len(xyzs), 3, device=device)
         _sigmas, _rgbs = model(xyzs[valid_mask], dirs[valid_mask])
-        sigmas[valid_mask] = _sigmas.float()
-        rgbs[valid_mask] = _rgbs.float()
+        sigmas[valid_mask], rgbs[valid_mask] = _sigmas.float(), _rgbs.float()
         sigmas = rearrange(sigmas, '(n1 n2) -> n1 n2', n2=N_samples)
         rgbs = rearrange(rgbs, '(n1 n2) c -> n1 n2 c', n2=N_samples)
 
