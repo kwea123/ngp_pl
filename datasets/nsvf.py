@@ -92,7 +92,9 @@ class NSVFDataset(BaseDataset):
                 img = img.resize(self.img_wh, Image.LANCZOS)
                 img = self.transform(img) # (c, h, w)
                 img = rearrange(img, 'c h w -> (h w) c')
-                # TODO: some blendedmvs scenes have black bg...
+                if 'Jade' in self.root_dir or 'Fountain' in self.root_dir:
+                    # these scenes have black background, changing to white
+                    img[torch.all(img<=0.1, dim=-1)] = 1.0
                 if img.shape[-1] == 4:
                     img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
 
