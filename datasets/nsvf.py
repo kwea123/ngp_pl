@@ -96,11 +96,13 @@ class NSVFDataset(BaseDataset):
                 c2w[:, 1:3] *= -1 # [right down front] to [right up back]
                 c2w[:, 3] -= self.shift
                 c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
-                rays_o, rays_d = get_rays(self.directions, torch.FloatTensor(c2w))
+
+                rays_o, rays_d = \
+                    get_rays(self.directions, torch.FloatTensor(c2w).cuda())
 
                 img = Image.open(img)
                 img = img.resize(self.img_wh, Image.LANCZOS)
-                img = self.transform(img) # (c, h, w)
+                img = self.transform(img).cuda() # (c, h, w)
                 img = rearrange(img, 'c h w -> (h w) c')
                 if 'Jade' in self.root_dir or 'Fountain' in self.root_dir:
                     # these scenes have black background, changing to white
@@ -108,6 +110,6 @@ class NSVFDataset(BaseDataset):
                 if img.shape[-1] == 4:
                     img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
 
-                rays[idx] = torch.cat([rays_o, rays_d, img], 1) # (h*w, 9)
+                rays[idx] = torch.cat([rays_o, rays_d, img], 1).cpu() # (h*w, 9)
 
         return rays

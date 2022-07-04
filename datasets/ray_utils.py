@@ -17,7 +17,7 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
         directions: (H, W, 3) or (H*W, 3), the direction of the rays in camera coordinate
         uv: (H, W, 2) or (H*W, 2) image coordinates
     """
-    grid = create_meshgrid(H, W, normalized_coordinates=False)[0] # (H, W, 2)
+    grid = create_meshgrid(H, W, False, device='cuda')[0] # (H, W, 2)
     i, j = grid.unbind(-1)
 
     fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
