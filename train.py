@@ -172,10 +172,8 @@ if __name__ == '__main__':
                       logger=logger,
                       enable_model_summary=False,
                       accelerator='auto',
-                      devices=hparams.num_gpus,
+                      devices=1, # tinycudann doesn't support multigpu...
                       num_sanity_val_steps=0,
-                      precision=16,
-                      strategy=DDPStrategy(find_unused_parameters=False)
-                               if hparams.num_gpus>1 else None)
+                      precision=16)
 
     trainer.fit(system)

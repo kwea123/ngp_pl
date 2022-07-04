@@ -21,8 +21,6 @@ def get_opts():
                         help='number of rays in a batch')
     parser.add_argument('--num_epochs', type=int, default=20,
                         help='number of training epochs')
-    parser.add_argument('--num_gpus', type=int, default=1,
-                        help='number of gpus')
 
     parser.add_argument('--hard_sampling', action='store_true', default=False,
                         help='whether to hard sample rays with high loss')

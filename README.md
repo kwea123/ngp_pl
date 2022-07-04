@@ -122,8 +122,4 @@ Followings are my results:
 
 # TODO
 
-- [ ] test multi-gpu training
-
 - [ ] support custom dataset
-
-- [ ] benchmark on public datasets
