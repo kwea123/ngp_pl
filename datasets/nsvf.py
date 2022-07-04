@@ -98,7 +98,7 @@ class NSVFDataset(BaseDataset):
                 c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
 
                 rays_o, rays_d = \
-                    get_rays(self.directions, torch.FloatTensor(c2w).cuda())
+                    get_rays(self.directions, torch.cuda.FloatTensor(c2w))
 
                 img = Image.open(img)
                 img = img.resize(self.img_wh, Image.LANCZOS)
