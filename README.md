@@ -75,7 +75,7 @@ More details are in the following section.
 
 To run benchmarks, use the scripts under `benchmarking`.
 
-Followings are my results:
+Followings are my results (qualitative results [here](https://github.com/kwea123/ngp_pl/issues/7)):
 
 <details>
   <summary>Synthetic-NeRF</summary>
