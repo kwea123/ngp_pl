@@ -89,15 +89,15 @@ class NeRFSystem(LightningModule):
         self.train_dataset.batch_size = hparams.batch_size
         return DataLoader(self.train_dataset,
                           shuffle=False, # shuffle is done in datasets/base.py
-                          num_workers=16,
+                          num_workers=8,
                           persistent_workers=True,
-                          batch_size=hparams.batch_size,
+                          batch_size=None,
                           pin_memory=True)
 
     def val_dataloader(self):
         return DataLoader(self.test_dataset,
                           shuffle=False,
-                          num_workers=16,
+                          num_workers=8,
                           batch_size=None,
                           pin_memory=True)
 
@@ -112,7 +112,7 @@ class NeRFSystem(LightningModule):
         results = self(rays, split='train')
         loss_d = self.loss(results, rgb)
         if hparams.hard_sampling:
-            self.weights[batch['idx']] = loss_d['rgb'].detach()
+            self.weights[batch['idxs']] = loss_d['rgb'].detach()
         loss = sum(lo.mean() for lo in loss_d.values())
 
         self.log('lr', self.opt.param_groups[0]['lr'])

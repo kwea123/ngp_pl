@@ -15,15 +15,15 @@ class BaseDataset(Dataset):
 
     def __len__(self):
         if self.split.startswith('train'):
-            return 1000 * self.batch_size
+            return 1000
         return len(self.rays)
 
     def __getitem__(self, idx):
         if self.split.startswith('train'):
-            idx = np.random.randint(len(self.rays))
-            sample = {'rays': self.rays[idx, :6],
-                      'rgb': self.rays[idx, 6:9],
-                      'idx': idx}
+            idxs = np.random.choice(len(self.rays), self.batch_size)
+            sample = {'rays': self.rays[idxs, :6],
+                      'rgb': self.rays[idxs, 6:9],
+                      'idxs': idxs}
         else:
             sample = {'rays': self.rays[idx][:, :6],
                       'rgb': self.rays[idx][:, 6:9]}
