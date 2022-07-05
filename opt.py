@@ -19,7 +19,7 @@ def get_opts():
 
     parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
-    parser.add_argument('--num_epochs', type=int, default=20,
+    parser.add_argument('--num_epochs', type=int, default=30,
                         help='number of training epochs')
 
     parser.add_argument('--hard_sampling', action='store_true', default=False,
@@ -32,8 +32,6 @@ def get_opts():
 
     parser.add_argument('--exp_name', type=str, default='exp',
                         help='experiment name')
-    parser.add_argument('--ckpt_freq', type=int, default=10,
-                        help='how often to save checkpoint')
     parser.add_argument('--ckpt_path', type=str, default=None,
                         help='pretrained checkpoint to load (including optimizers, etc)')
 

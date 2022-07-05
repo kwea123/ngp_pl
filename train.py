@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
     ckpt_cb = ModelCheckpoint(dirpath=f'ckpts/{hparams.exp_name}',
                               filename='{epoch:d}',
-                              every_n_epochs=min(hparams.ckpt_freq, hparams.num_epochs),
+                              every_n_epochs=hparams.num_epochs,
                               save_on_train_epoch_end=True,
                               save_top_k=-1)
     callbacks = [ckpt_cb, TQDMProgressBar(refresh_rate=1)]
