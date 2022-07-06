@@ -68,7 +68,7 @@ class NeRFSystem(LightningModule):
         self.test_dataset = dataset(split='test', **kwargs)
 
     def configure_optimizers(self):
-        self.opt = FusedAdam(self.model.parameters(), hparams.lr)
+        self.opt = FusedAdam(self.model.parameters(), hparams.lr, eps=1e-15)
         self.sch = CosineAnnealingLR(self.opt,
                                      hparams.num_epochs,
                                      hparams.lr/30)
@@ -89,7 +89,7 @@ class NeRFSystem(LightningModule):
         self.train_dataset.batch_size = hparams.batch_size
         return DataLoader(self.train_dataset,
                           shuffle=False, # shuffle is done in datasets/base.py
-                          num_workers=8,
+                          num_workers=16,
                           persistent_workers=True,
                           batch_size=None,
                           pin_memory=True)
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                       callbacks=callbacks,
                       logger=logger,
                       enable_model_summary=False,
-                      accelerator='auto',
+                      accelerator='gpu',
                       devices=1, # tinycudann doesn't support multigpu...
                       num_sanity_val_steps=0,
                       precision=16)
