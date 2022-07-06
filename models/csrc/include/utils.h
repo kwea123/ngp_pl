@@ -36,7 +36,7 @@ std::vector<torch::Tensor> raymarching_train_cu(
     const torch::Tensor density_bitfield,
     const float scale,
     const float exp_step_factor,
-    const bool perturb,
+    const torch::Tensor noise,
     const int grid_size,
     const int max_samples
 );

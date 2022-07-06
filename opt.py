@@ -14,7 +14,7 @@ def get_opts():
     parser.add_argument('--downsample', type=float, default=1.0,
                         help='downsample factor (<=1.0) for the images')
 
-    parser.add_argument('--scale', type=float, default=1.0,
+    parser.add_argument('--scale', type=float, default=0.5,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
 
     parser.add_argument('--batch_size', type=int, default=8192,

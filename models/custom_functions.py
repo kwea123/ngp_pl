@@ -38,7 +38,6 @@ class RayMarcher(torch.autograd.Function):
         density_bitfield: (C*G**3//8)
         scale: float
         exp_step_factor: the exponential factor to scale the steps
-        perturb: whether to perturb the first sample's depth
         grid_size: int
         max_samples: int
         mean_samples: int, mean total samples per batch
@@ -55,13 +54,16 @@ class RayMarcher(torch.autograd.Function):
     @custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, rays_o, rays_d, hits_t,
                 density_bitfield, scale, exp_step_factor,
-                perturb, grid_size, max_samples):
+                grid_size, max_samples):
+
+        # noise to perturb the first sample of each ray
+        noise = torch.rand_like(rays_o[:, 0])
 
         rays_a, xyzs, dirs, deltas, ts, counter = \
             vren.raymarching_train(
                 rays_o, rays_d, hits_t,
                 density_bitfield, scale,
-                exp_step_factor, perturb, grid_size, max_samples)
+                exp_step_factor, noise, grid_size, max_samples)
 
         total_samples = counter[0] # total samples for all rays
         # remove redundant output

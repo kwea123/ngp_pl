@@ -1,6 +1,5 @@
 #include "helper_math.h"
 #include "utils.h"
-#include "pcg32.h"
 
 #define SQRT3 1.73205080757f
 
@@ -20,7 +19,7 @@ inline __host__ __device__ float calc_dt(
 inline __device__ int mip_from_pos(const float x, const float y, const float z, const int cascades) {
     const float mx = fmaxf(fabsf(x), fmaxf(fabs(y), fabs(z)));
     int exponent; frexpf(mx, &exponent); // [0, 0.5) --> -1, [0.5, 1) --> 0, [1, 2) --> 1, ...
-    return fminf(cascades-1, fmaxf(0, exponent));
+    return fminf(cascades-1, fmaxf(0, exponent+1));
 }
 
 inline __device__ int mip_from_dt(float dt, int grid_size, int cascades) {
@@ -129,9 +128,8 @@ __global__ void raymarching_train_kernel(
     const int grid_size,
     const float scale,
     const float exp_step_factor,
-    const bool perturb,
+    const torch::PackedTensorAccessor32<float, 1, torch::RestrictPtrTraits> noise,
     const int max_samples,
-    pcg32 rng,
     int* __restrict__ counter,
     torch::PackedTensorAccessor32<int, 2, torch::RestrictPtrTraits> rays_a,
     torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> xyzs,
@@ -149,11 +147,10 @@ __global__ void raymarching_train_kernel(
     const float dx_inv = 1.0f/dx, dy_inv = 1.0f/dy, dz_inv = 1.0f/dz;
     float t1 = hits_t[r][0], t2 = hits_t[r][1];
 
-    if (perturb && t1>=0) { // only perturb the starting t
-        rng.advance(r);
+    if (t1>=0) { // only perturb the starting t
         const float dt = 
             calc_dt(t1, exp_step_factor, scale, max_samples, grid_size, cascades);
-        t1 += dt*rng.next_float();
+        t1 += dt*noise[r];
     }
 
     // first pass: compute the number of samples on the ray
@@ -257,7 +254,7 @@ std::vector<torch::Tensor> raymarching_train_cu(
     const torch::Tensor density_bitfield,
     const float scale,
     const float exp_step_factor,
-    const bool perturb,
+    const torch::Tensor noise,
     const int grid_size,
     const int max_samples
 ){
@@ -276,8 +273,6 @@ std::vector<torch::Tensor> raymarching_train_cu(
 
     const int threads = 256, blocks = (N_rays+threads-1)/threads;
 
-    pcg32 rng = pcg32{(uint64_t)42}; // hard coded random seed
-    
     AT_DISPATCH_FLOATING_TYPES_AND_HALF(rays_o.type(), "raymarching_train_cu", 
     ([&] {
         raymarching_train_kernel<<<blocks, threads>>>(
@@ -289,9 +284,10 @@ std::vector<torch::Tensor> raymarching_train_cu(
             grid_size,
             scale,
             exp_step_factor,
-            perturb,
+            // perturb,
+            noise.packed_accessor32<float, 1, torch::RestrictPtrTraits>(),
             max_samples,
-            rng,
+            // rng,
             counter.data_ptr<int>(),
             rays_a.packed_accessor32<int, 2, torch::RestrictPtrTraits>(),
             xyzs.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),

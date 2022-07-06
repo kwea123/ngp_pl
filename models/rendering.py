@@ -117,7 +117,7 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     rays_a, xyzs, dirs, deltas, ts = \
         RayMarcher.apply(
             rays_o, rays_d, hits_t[:, 0], model.density_bitfield, model.scale,
-            kwargs.get('exp_step_factor', 0.), True, model.grid_size, MAX_SAMPLES)
+            kwargs.get('exp_step_factor', 0.), model.grid_size, MAX_SAMPLES)
 
     sigmas, rgbs = model(xyzs, dirs)
 

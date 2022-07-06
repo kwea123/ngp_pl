@@ -17,8 +17,8 @@ class NGP(nn.Module):
         self.register_buffer('xyz_max', torch.ones(1, 3)*scale)
         self.register_buffer('half_size', (self.xyz_max-self.xyz_min)/2)
 
-        # each density grid covers [-2^k, 2^k]^3 for k in [0, C-1]
-        self.cascades = 1+int(np.ceil(np.log2(scale)))
+        # each density grid covers [-2^(k-1), 2^(k-1)]^3 for k in [0, C-1]
+        self.cascades = max(1+int(np.ceil(np.log2(2*scale))), 1)
         self.grid_size = 128
         self.register_buffer('density_grid',
             torch.zeros(self.cascades, self.grid_size**3))

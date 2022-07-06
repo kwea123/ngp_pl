@@ -49,7 +49,7 @@ std::vector<torch::Tensor> raymarching_train(
     const torch::Tensor density_bitfield,
     const float scale,
     const float exp_step_factor,
-    const bool perturb,
+    const torch::Tensor noise,
     const int grid_size,
     const int max_samples
 ){
@@ -57,10 +57,11 @@ std::vector<torch::Tensor> raymarching_train(
     CHECK_INPUT(rays_d);
     CHECK_INPUT(hits_t);
     CHECK_INPUT(density_bitfield);
+    CHECK_INPUT(noise);
 
     return raymarching_train_cu(
         rays_o, rays_d, hits_t, density_bitfield, scale, exp_step_factor,
-        perturb, grid_size, max_samples);
+        noise, grid_size, max_samples);
 }
 
 
