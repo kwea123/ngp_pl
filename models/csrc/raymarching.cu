@@ -146,6 +146,7 @@ __global__ void raymarching_train_kernel(
 
     const float ox = rays_o[r][0], oy = rays_o[r][1], oz = rays_o[r][2];
     const float dx = rays_d[r][0], dy = rays_d[r][1], dz = rays_d[r][2];
+    const float dx_inv = 1.0f/dx, dy_inv = 1.0f/dy, dz_inv = 1.0f/dz;
     float t1 = hits_t[r][0], t2 = hits_t[r][1];
 
     if (perturb && t1>=0) { // only perturb the starting t
@@ -160,9 +161,7 @@ __global__ void raymarching_train_kernel(
 
     // if t1 < 0 (no hit) this loop will be skipped (N_samples will be 0)
     while (0<=t && t<t2 && N_samples<max_samples){
-        const float x = clamp(ox+t*dx, -scale, scale);
-        const float y = clamp(oy+t*dy, -scale, scale);
-        const float z = clamp(oz+t*dz, -scale, scale);
+        const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
         const float dt = 
             calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
@@ -184,12 +183,13 @@ __global__ void raymarching_train_kernel(
             t += dt; N_samples++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            float grid_size_inv = 1.0f/grid_size;
-            const float tx = (((nx+0.5f*(1+signf(dx)))*grid_size_inv*2-1)*mip_bound-x)/dx;
-            const float ty = (((ny+0.5f*(1+signf(dy)))*grid_size_inv*2-1)*mip_bound-y)/dy;
-            const float tz = (((nz+0.5f*(1+signf(dz)))*grid_size_inv*2-1)*mip_bound-z)/dz;
+            const int res = grid_size>>mip;
+            const float px = x*res, py = y*res, pz = z*res;
+            const float tx = (floorf(px+0.5f*(1+signf(dx)))-px)*dx_inv;
+            const float ty = (floorf(py+0.5f*(1+signf(dy)))-py)*dy_inv;
+            const float tz = (floorf(pz+0.5f*(1+signf(dz)))-pz)*dz_inv;
 
-            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))); // the t of the next voxel
+            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
             do {
                 t += calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
             } while (t < t_target);
@@ -208,9 +208,7 @@ __global__ void raymarching_train_kernel(
     t = t1; int samples = 0;
 
     while (t<t2 && samples<N_samples){
-        const float x = clamp(ox+t*dx, -scale, scale);
-        const float y = clamp(oy+t*dy, -scale, scale);
-        const float z = clamp(oz+t*dz, -scale, scale);
+        const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
         const float dt = 
             calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
@@ -237,12 +235,13 @@ __global__ void raymarching_train_kernel(
             t += dt; samples++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            const float grid_size_inv = 1.0f/grid_size;
-            const float tx = (((nx+0.5f*(1+signf(dx)))*grid_size_inv*2-1)*mip_bound-x)/dx;
-            const float ty = (((ny+0.5f*(1+signf(dy)))*grid_size_inv*2-1)*mip_bound-y)/dy;
-            const float tz = (((nz+0.5f*(1+signf(dz)))*grid_size_inv*2-1)*mip_bound-z)/dz;
+            const int res = grid_size>>mip;
+            const float px = x*res, py = y*res, pz = z*res;
+            const float tx = (floorf(px+0.5f*(1+signf(dx)))-px)*dx_inv;
+            const float ty = (floorf(py+0.5f*(1+signf(dy)))-py)*dy_inv;
+            const float tz = (floorf(pz+0.5f*(1+signf(dz)))-pz)*dz_inv;
 
-            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))); // the t of the next voxel
+            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
             do {
                 t += calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
             } while (t < t_target);
@@ -332,14 +331,13 @@ __global__ void raymarching_test_kernel(
 
     const float ox = rays_o[r][0], oy = rays_o[r][1], oz = rays_o[r][2];
     const float dx = rays_d[r][0], dy = rays_d[r][1], dz = rays_d[r][2];
+    const float dx_inv = 1.0f/dx, dy_inv = 1.0f/dy, dz_inv = 1.0f/dz;
 
     float t = hits_t[r][0], t2 = hits_t[r][1];
     int s = 0;
 
     while (t<t2 && s<N_samples){
-        const float x = clamp(ox+t*dx, -scale, scale);
-        const float y = clamp(oy+t*dy, -scale, scale);
-        const float z = clamp(oz+t*dz, -scale, scale);
+        const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
         const float dt = 
             calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
@@ -367,12 +365,13 @@ __global__ void raymarching_test_kernel(
             s++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            const float grid_size_inv = 1.0f/grid_size;
-            const float tx = (((nx+0.5f*(1+signf(dx)))*grid_size_inv*2-1)*mip_bound-x)/dx;
-            const float ty = (((ny+0.5f*(1+signf(dy)))*grid_size_inv*2-1)*mip_bound-y)/dy;
-            const float tz = (((nz+0.5f*(1+signf(dz)))*grid_size_inv*2-1)*mip_bound-z)/dz;
+            const int res = grid_size>>mip;
+            const float px = x*res, py = y*res, pz = z*res;
+            const float tx = (floorf(px+0.5f*(1+signf(dx)))-px)*dx_inv;
+            const float ty = (floorf(py+0.5f*(1+signf(dy)))-py)*dy_inv;
+            const float tz = (floorf(pz+0.5f*(1+signf(dz)))-pz)*dz_inv;
 
-            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))); // the t of the next voxel
+            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
             do {
                 t += calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
             } while (t < t_target);
