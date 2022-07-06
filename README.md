@@ -57,7 +57,7 @@ I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the infere
 | Method    | avg PSNR | FPS   | 
 | :---:     | :---:    | :---: |
 | torch-ngp | 31.46    | 18.2  |
-| mine      | 32.61    | 36.2  |
+| mine      | 32.76    | 36.2  |
 | instant-ngp paper | **33.18** | **60** |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs.
@@ -84,7 +84,7 @@ Followings are my results (qualitative results [here](https://github.com/kwea123
 
 |       | Mic   | Ficus | Chair | Hotdog | Materials | Drums | Ship  | Lego  | AVG   |
 | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
-| PSNR  | 35.73 | 33.94 | 34.80 | 36.76  | 29.12     | 25.67 | 29.94 | 34.93 | 32.61 |
+| PSNR  | 35.75 | 34.05 | 35.20 | 36.99  | 29.42     | 25.68 | 29.62 | 35.39 | 32.76 |
 | FPS   | 40.81 | 34.02 | 49.80 | 25.06  | 20.08     | 37.77 | 15.77 | 36.20 | 32.44 |
 | Training time | 3m53s | 3m50s | 4m12s | 6m10s | 5m12s | 4m28s | 7m16s | 4m55s | 5m00s |
 
@@ -95,7 +95,7 @@ Followings are my results (qualitative results [here](https://github.com/kwea123
 
 |       | Wineholder | Steamtrain | Toad | Robot | Bike | Palace | Spaceship | Lifestyle | AVG | 
 | :---: | :---: | :---: | :---: | :---: | :---:  | :---:  | :---: | :---: | :---: |
-| PSNR  | 31.43 | 36.09 | 34.47 | 36.44 | 37.62 | 36.59 | 36.11 | 34.20 | 35.39 |
+| PSNR  | 31.66 | 36.15 | 35.24 | 36.38 | 37.49 | 36.88 | 35.46 | 34.68 | 35.49 |
 | FPS   | 47.07 | 75.17 | 50.42 | 64.87 | 66.88 | 28.62 | 35.55 | 22.84 | 48.93 |
 | Training time | 4m21s | 4m12s | 4m41s | 3m59s | 3m52s | 5m39s | 4m07s | 5m04s | 4m49s |
 
