@@ -106,7 +106,7 @@ Followings are my results (qualitative results [here](https://github.com/kwea123
 
 |      | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
 |:---: | :---:    | :---: | :---: | :---:       | :---:  | :---: |
-| PSNR | 28.90    | 28.21 | 28.92 | 26.30       | 33.77  | 29.22 |
+| PSNR | 28.90    | 28.23 | 29.10 | 26.50       | 35.67  | 29.68 |
 | *FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
 
 *Evaluated on `test-traj`
