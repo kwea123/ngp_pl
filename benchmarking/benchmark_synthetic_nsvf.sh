@@ -1,33 +1,35 @@
 #!/bin/bash
 
-python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Wineholder \
-    --exp_name Wineholder
+export ROOT_DIR=/home/ubuntu/data/nerf_data/Synthetic_NSVF
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Steamtrain \
-    --exp_name Steamtrain
+    --root_dir $ROOT_DIR/Wineholder \
+    --exp_name Wineholder --no_save_test
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Toad \
-    --exp_name Toad
+    --root_dir $ROOT_DIR/Steamtrain \
+    --exp_name Steamtrain --no_save_test
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Robot \
-    --exp_name Robot
+    --root_dir $ROOT_DIR/Toad \
+    --exp_name Toad --no_save_test
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Bike \
-    --exp_name Bike
+    --root_dir $ROOT_DIR/Robot \
+    --exp_name Robot --no_save_test
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Palace \
-    --exp_name Palace
+    --root_dir $ROOT_DIR/Bike \
+    --exp_name Bike --no_save_test
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Spaceship \
-    --exp_name Spaceship
+    --root_dir $ROOT_DIR/Palace \
+    --exp_name Palace --no_save_test
 
 python train.py \
-    --root_dir /home/ubuntu/data/nerf_data/Synthetic_NSVF/Lifestyle \
-    --exp_name Lifestyle
+    --root_dir $ROOT_DIR/Spaceship \
+    --exp_name Spaceship --no_save_test
+
+python train.py \
+    --root_dir $ROOT_DIR/Lifestyle \
+    --exp_name Lifestyle --no_save_test
