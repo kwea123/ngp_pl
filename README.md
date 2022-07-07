@@ -105,12 +105,13 @@ Followings are my results (qualitative results [here](https://github.com/kwea123
 <details>
   <summary>Tanks and Temples</summary>
 
-|      | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
-|:---: | :---:    | :---: | :---: | :---:       | :---:  | :---: |
-| PSNR | 28.90    | 28.23 | 29.10 | 26.50       | 35.67  | 29.68 |
-| *FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
+|       | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
+|:---:  | :---:    | :---: | :---: | :---:       | :---:  | :---: |
+| *PSNR | 28.22    | 27.57 | 28.00 | 26.16       | 33.94  | 28.78 |
+| **FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
 
-*Evaluated on `test-traj`
+*Trained with `downsample=0.5` (due to insufficient RAM) and evaluated with `downsample=1.0`
+**Evaluated on `test-traj`
 
 </details>
 
