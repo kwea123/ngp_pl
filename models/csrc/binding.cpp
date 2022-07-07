@@ -16,6 +16,21 @@ std::vector<torch::Tensor> ray_aabb_intersect(
 }
 
 
+std::vector<torch::Tensor> ray_sphere_intersect(
+    const torch::Tensor rays_o,
+    const torch::Tensor rays_d,
+    const torch::Tensor centers,
+    const torch::Tensor radii,
+    const int max_hits
+){
+    CHECK_INPUT(rays_o);
+    CHECK_INPUT(rays_d);
+    CHECK_INPUT(centers);
+    CHECK_INPUT(radii);
+    return ray_sphere_intersect_cu(rays_o, rays_d, centers, radii, max_hits);
+}
+
+
 void packbits(
     torch::Tensor density_grid,
     const float density_threshold,
@@ -179,6 +194,7 @@ void composite_test_fw(
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m){
     m.def("ray_aabb_intersect", &ray_aabb_intersect);
+    m.def("ray_sphere_intersect", &ray_sphere_intersect);
 
     m.def("morton3D", &morton3D);
     m.def("morton3D_invert", &morton3D_invert);

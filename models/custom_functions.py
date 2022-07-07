@@ -27,6 +27,29 @@ class RayAABBIntersector(torch.autograd.Function):
         return vren.ray_aabb_intersect(rays_o, rays_d, center, half_size, max_hits)
 
 
+class RaySphereIntersector(torch.autograd.Function):
+    """
+    Computes the intersections of rays and spheres.
+
+    Inputs:
+        rays_o: (N_rays, 3) ray origins
+        rays_d: (N_rays, 3) normalized ray directions
+        centers: (N_spheres, 3) sphere centers
+        radii: (N_spheres, 3) radii
+        max_hits: maximum number of intersected spheres to keep for one ray
+
+    Outputs:
+        hits_cnt: (N_rays) number of hits for each ray
+        (followings are from near to far)
+        hits_t: (N_rays, max_hits, 2) hit t's (-1 if no hit)
+        hits_sphere_idx: (N_rays, max_hits) hit sphere indices (-1 if no hit)
+    """
+    @staticmethod
+    @custom_fwd(cast_inputs=torch.float32)
+    def forward(ctx, rays_o, rays_d, center, radii, max_hits):
+        return vren.ray_sphere_intersect(rays_o, rays_d, center, radii, max_hits)
+
+
 class RayMarcher(torch.autograd.Function):
     """
     March the rays to get sample point positions and directions.

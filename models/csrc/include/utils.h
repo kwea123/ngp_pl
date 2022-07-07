@@ -18,6 +18,15 @@ std::vector<torch::Tensor> ray_aabb_intersect_cu(
 );
 
 
+std::vector<torch::Tensor> ray_sphere_intersect_cu(
+    const torch::Tensor rays_o,
+    const torch::Tensor rays_d,
+    const torch::Tensor centers,
+    const torch::Tensor radii,
+    const int max_hits
+);
+
+
 void packbits_cu(
     torch::Tensor density_grid,
     const float density_threshold,
