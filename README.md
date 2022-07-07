@@ -19,7 +19,7 @@ This implementation has **strict** requirements due to dependencies on other lib
 
 * OS: Ubuntu 20.04
 * NVIDIA GPU with Compute Compatibility >= 75 and memory > 6GB (Tested with RTX 2080 Ti), CUDA 11.3 (might work with older version)
-* >= 32GB RAM (in order to load full size images)
+* 32GB RAM (in order to load full size images)
 
 ## Software
 
