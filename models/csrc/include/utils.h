@@ -71,7 +71,6 @@ std::vector<torch::Tensor> composite_train_fw_cu(
     const torch::Tensor deltas,
     const torch::Tensor ts,
     const torch::Tensor rays_a,
-    const torch::Tensor rgb_bg,
     const float T_threshold
 );
 
@@ -88,7 +87,6 @@ std::vector<torch::Tensor> composite_train_bw_cu(
     const torch::Tensor opacity,
     const torch::Tensor depth,
     const torch::Tensor rgb,
-    const torch::Tensor rgb_bg,
     const float T_threshold
 );
 

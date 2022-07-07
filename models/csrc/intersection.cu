@@ -114,7 +114,9 @@ __device__ __forceinline__ float2 _ray_sphere_intersect(
     const float discriminant = half_b*half_b-c;
 
     if (discriminant < 0) return make_float2(-1.0f); // no intersection
-    return make_float2(-half_b-sqrtf(discriminant), -half_b+sqrtf(discriminant));
+
+    const float disc_sqrt = sqrtf(discriminant);
+    return make_float2(-half_b-disc_sqrt, -half_b+disc_sqrt);
 }
 
 

@@ -110,7 +110,6 @@ class VolumeRenderer(torch.autograd.Function):
         rays_a: (N_rays, 3) ray_idx, start_idx, N_samples
                 meaning each entry corresponds to the @ray_idx th ray,
                 whose samples are [start_idx:start_idx+N_samples]
-        rgb_bg: (3) background color
         T_threshold: float, stop the ray if the transmittance is below it
 
     Outputs:
@@ -120,12 +119,12 @@ class VolumeRenderer(torch.autograd.Function):
     """
     @staticmethod
     @custom_fwd(cast_inputs=torch.float32)
-    def forward(ctx, sigmas, rgbs, deltas, ts, rays_a, rgb_bg, T_threshold):
+    def forward(ctx, sigmas, rgbs, deltas, ts, rays_a, T_threshold):
         opacity, depth, rgb = \
             vren.composite_train_fw(sigmas, rgbs, deltas, ts,
-                                    rays_a, rgb_bg, T_threshold)
+                                    rays_a, T_threshold)
         ctx.save_for_backward(sigmas, rgbs, deltas, ts, rays_a,
-                              opacity, depth, rgb, rgb_bg)
+                              opacity, depth, rgb)
         ctx.T_threshold = T_threshold
         return opacity, depth, rgb
 
@@ -133,14 +132,14 @@ class VolumeRenderer(torch.autograd.Function):
     @custom_bwd
     def backward(ctx, dL_dopacity, dL_ddepth, dL_drgb):
         sigmas, rgbs, deltas, ts, rays_a, \
-        opacity, depth, rgb, rgb_bg = ctx.saved_tensors
-        dL_dsigmas, dL_drgbs, dL_drgb_bg = \
+        opacity, depth, rgb = ctx.saved_tensors
+        dL_dsigmas, dL_drgbs = \
             vren.composite_train_bw(dL_dopacity, dL_ddepth,
                                     dL_drgb, sigmas, rgbs, deltas, ts,
                                     rays_a,
-                                    opacity, depth, rgb, rgb_bg,
+                                    opacity, depth, rgb,
                                     ctx.T_threshold)
-        return dL_dsigmas, dL_drgbs, None, None, None, dL_drgb_bg, None
+        return dL_dsigmas, dL_drgbs, None, None, None, None
 
 
 class TruncExp(torch.autograd.Function):
