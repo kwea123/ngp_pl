@@ -17,7 +17,6 @@ class NSVFDataset(BaseDataset):
         self.root_dir = root_dir
         self.split = split
         self.downsample = downsample
-        self.define_transforms()
 
         xyz_min, xyz_max = \
             np.loadtxt(os.path.join(root_dir, 'bbox.txt'))[:6].reshape(2, 3)

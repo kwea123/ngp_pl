@@ -8,7 +8,7 @@ class BaseDataset(Dataset):
     Define length and sampling method
     """
     def __init__(self):
-        pass
+        self.define_transforms()
 
     def define_transforms(self):
         self.transform = T.ToTensor()
