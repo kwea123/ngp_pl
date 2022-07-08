@@ -157,7 +157,7 @@ class NGP(nn.Module):
         for c in range(self.cascades):
             indices, coords = cells[c]
             xyzs = coords.float()/(self.grid_size-1)*2-1 # in [-1, 1]
-            s = min(2**c, self.scale)
+            s = min(2**(c-1), self.scale)
             half_grid_size = s/self.grid_size
             # scale to current cascade's resolution
             xyzs_c = xyzs * (s-half_grid_size)
