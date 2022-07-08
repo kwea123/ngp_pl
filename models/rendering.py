@@ -123,7 +123,7 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
 
     rgb_bg = torch.ones(3, device=rays_o.device) # TODO: infer env map from network
     results['opacity'], results['depth'], rgb = \
-        VolumeRenderer.apply(sigmas, rgbs, deltas, ts,
+        VolumeRenderer.apply(sigmas, rgbs.contiguous(), deltas, ts,
                              rays_a, kwargs.get('T_threshold', 1e-4))
 
     results['rgb'] = rgb + rgb_bg*rearrange(1-results['opacity'], 'n -> n 1')
