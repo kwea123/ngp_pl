@@ -28,7 +28,11 @@ def load_ckpt(model, ckpt_path, model_name='model', prefixes_to_ignore=[]):
 def slim_ckpt(ckpt_path):
     ckpt = torch.load(ckpt_path)
     # pop unused parameters
-    ckpt['state_dict'].pop('weights', None)
-    ckpt['state_dict'].pop('model.density_grid', None)
-    ckpt['state_dict'].pop('model.grid_coords', None)
+    keys_to_pop = []
+    for k in ckpt['state_dict']:
+        if k.startswith('val_lpips') or \
+           k in ['weights', 'model.density_grid', 'model.grid_coords']:
+            keys_to_pop += [k]
+    for k in keys_to_pop:
+        ckpt['state_dict'].pop(k)
     return ckpt['state_dict']
