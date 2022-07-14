@@ -1,9 +1,11 @@
 import torch
 from opt import get_opts
 import os
+import glob
 import imageio
 import numpy as np
 import cv2
+from einops import rearrange
 
 # data
 from torch.utils.data import DataLoader
@@ -12,7 +14,7 @@ from datasets import dataset_dict
 # models
 from kornia.utils.grid import create_meshgrid3d
 from models.networks import NGP
-from models.rendering import render, MAX_SAMPLES
+from models.rendering import render
 
 # optimizer, losses
 from apex.optimizers import FusedAdam
@@ -20,9 +22,15 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from losses import NeRFLoss
 
 # metrics
-from metrics import psnr
+# from metrics import psnr
+from torchmetrics import (
+    PeakSignalNoiseRatio, 
+    StructuralSimilarityIndexMeasure
+)
+from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
 # pytorch-lightning
+from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -46,17 +54,27 @@ class NeRFSystem(LightningModule):
         self.save_hyperparameters(hparams)
 
         self.loss = NeRFLoss()
+        self.train_psnr = PeakSignalNoiseRatio(data_range=1)
+        self.val_psnr = PeakSignalNoiseRatio(data_range=1)
+        # compute the following causes CUDA OOM...
+        # self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)
+        # self.val_lpips = LearnedPerceptualImagePatchSimilarity('vgg')
 
         self.model = NGP(scale=hparams.scale)
         # save grid coordinates for training
         G = self.model.grid_size
+        self.model.register_buffer('density_grid',
+            torch.zeros(self.model.cascades, G**3))
         self.model.register_buffer('grid_coords',
             create_meshgrid3d(G, G, G, False, dtype=torch.int32).reshape(-1, 3))
 
         self.S = 16 # the interval to update density grid
 
     def forward(self, rays, split):
-        kwargs = {'test_time': split!='train'}
+        kwargs = {'test_time': split!='train',
+                  'to_cpu': split!='train'}
+        if hparams.dataset_name == 'colmap':
+            kwargs['exp_step_factor'] = 1/256
 
         return render(self.model, rays, **kwargs)
 
@@ -88,7 +106,6 @@ class NeRFSystem(LightningModule):
 
         self.train_dataset.batch_size = hparams.batch_size
         return DataLoader(self.train_dataset,
-                          shuffle=False, # shuffle is done in datasets/base.py
                           num_workers=16,
                           persistent_workers=True,
                           batch_size=None,
@@ -96,16 +113,13 @@ class NeRFSystem(LightningModule):
 
     def val_dataloader(self):
         return DataLoader(self.test_dataset,
-                          shuffle=False,
                           num_workers=8,
                           batch_size=None,
                           pin_memory=True)
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
-            # gradually increase the threshold to remove floater
-            a_thr = min(self.current_epoch+1, 25)/50 # alpha threshold, at most 0.5
-            self.model.update_density_grid(a_thr*MAX_SAMPLES/(2*3**0.5),
+            self.model.update_density_grid(hparams.density_threshold,
                                            warmup=self.global_step<256)
 
         rays, rgb = batch['rays'], batch['rgb']
@@ -115,44 +129,45 @@ class NeRFSystem(LightningModule):
             self.weights[batch['idxs']] = loss_d['rgb'].detach()
         loss = sum(lo.mean() for lo in loss_d.values())
 
+        with torch.no_grad():
+            self.train_psnr(results['rgb'], rgb)
         self.log('lr', self.opt.param_groups[0]['lr'])
         self.log('train/loss', loss)
-        self.log('train/psnr', psnr(results['rgb'], rgb), prog_bar=True)
+        self.log('train/psnr', self.train_psnr, prog_bar=True)
 
         return loss
 
     def on_validation_start(self):
+        torch.cuda.empty_cache()
         if not hparams.no_save_test:
             self.val_dir = f'results/{hparams.dataset_name}/{hparams.exp_name}'
             os.makedirs(self.val_dir, exist_ok=True)
 
     def validation_step(self, batch, batch_nb):
-        rays, rgb_gt = batch['rays'], batch['rgb']
+        rays, rgb_gt = batch['rays'], batch['rgb'].cpu()
         results = self(rays, split='test')
-        log = {'psnr': psnr(results['rgb'], rgb_gt)}
+
+        with torch.no_grad():
+            self.val_psnr(results['rgb'], rgb_gt)
+
+            w, h = self.train_dataset.img_wh
+            rgb_pred = rearrange(results['rgb'], '(h w) c -> 1 c h w', h=h)
+            rgb_gt = rearrange(rgb_gt, '(h w) c -> 1 c h w', h=h)
+            # self.val_ssim(rgb_pred, rgb_gt)
+            # self.val_lpips(rgb_pred*2-1, rgb_gt*2-1)
 
         if not hparams.no_save_test: # save test image to disk
-            w, h = self.train_dataset.img_wh
-            rgb_pred = results['rgb'].reshape(h, w, 3).cpu().numpy()
-            log['rgb'] = rgb_pred = (rgb_pred*255).astype(np.uint8)
-            log['depth'] = depth = \
-                depth2img(results['depth'].reshape(h, w).cpu().numpy())
-            imageio.imsave(os.path.join(self.val_dir, f'{batch_nb:03d}.png'), rgb_pred)
-            imageio.imsave(os.path.join(self.val_dir, f'{batch_nb:03d}_d.png'), depth)
-
-        return log
+            idx = batch['idx']
+            rgb_pred = rearrange(results['rgb'].numpy(), '(h w) c -> h w c', h=h)
+            rgb_pred = (rgb_pred*255).astype(np.uint8)
+            depth = depth2img(rearrange(results['depth'].numpy(), '(h w) -> h w', h=h))
+            imageio.imsave(os.path.join(self.val_dir, f'{idx:03d}.png'), rgb_pred)
+            imageio.imsave(os.path.join(self.val_dir, f'{idx:03d}_d.png'), depth)
 
     def validation_epoch_end(self, outputs):
-        mean_psnr = torch.stack([x['psnr'] for x in outputs]).mean()
-        self.log('test/psnr', mean_psnr, prog_bar=True)
-
-        if not hparams.no_save_test: # save video
-            imageio.mimsave(os.path.join(self.val_dir, 'rgb.mp4'),
-                            [x['rgb'] for x in outputs],
-                            fps=30, macro_block_size=1)
-            imageio.mimsave(os.path.join(self.val_dir, 'depth.mp4'),
-                            [x['depth'] for x in outputs],
-                            fps=30, macro_block_size=1)
+        self.log('test/psnr', self.val_psnr, prog_bar=True)
+        # self.log('test/ssim', self.val_ssim)
+        # self.log('test/lpips_vgg', self.val_lpips)
 
 
 if __name__ == '__main__':
@@ -177,11 +192,22 @@ if __name__ == '__main__':
                       logger=logger,
                       enable_model_summary=False,
                       accelerator='gpu',
-                      devices=1, # tinycudann doesn't support multigpu...
+                      devices=hparams.num_gpus,
+                      strategy=DDPPlugin(find_unused_parameters=False)
+                               if hparams.num_gpus>1 else None,
                       num_sanity_val_steps=0,
                       precision=16)
 
     trainer.fit(system, ckpt_path=hparams.ckpt_path)
+
+    if (not hparams.no_save_test) and hparams.dataset_name=='nsvf': # save video
+        imgs = sorted(glob.glob(os.path.join(system.val_dir, '*.png')))
+        imageio.mimsave(os.path.join(system.val_dir, 'rgb.mp4'),
+                        [imageio.imread(img) for img in imgs[::2]],
+                        fps=30, macro_block_size=1)
+        imageio.mimsave(os.path.join(system.val_dir, 'depth.mp4'),
+                        [imageio.imread(img) for img in imgs[1::2]],
+                        fps=30, macro_block_size=1)
 
     # save slimmed ckpt for the last epoch
     ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')

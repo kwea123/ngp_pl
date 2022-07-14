@@ -6,7 +6,7 @@ def get_opts():
     parser.add_argument('--root_dir', type=str, required=True,
                         help='root directory of dataset')
     parser.add_argument('--dataset_name', type=str, default='nsvf',
-                        choices=['nsvf'],
+                        choices=['nsvf', 'colmap'],
                         help='which dataset to train/test')
     parser.add_argument('--split', type=str, default='train',
                         choices=['train', 'trainval'],
@@ -16,11 +16,15 @@ def get_opts():
 
     parser.add_argument('--scale', type=float, default=0.5,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
+    parser.add_argument('--density_threshold', type=float, default=10.0,
+                        help='density threshold below which a cell is considered empty')
 
     parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
     parser.add_argument('--num_epochs', type=int, default=30,
                         help='number of training epochs')
+    parser.add_argument('--num_gpus', type=int, default=1,
+                        help='number of gpus')
 
     parser.add_argument('--hard_sampling', action='store_true', default=False,
                         help='whether to hard sample rays with high loss')
