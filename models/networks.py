@@ -7,7 +7,7 @@ import numpy as np
 
 
 class NGP(nn.Module):
-    def __init__(self, scale):
+    def __init__(self, scale=0.5):
         super().__init__()
 
         # scene bounding box
@@ -20,8 +20,6 @@ class NGP(nn.Module):
         # each density grid covers [-2^(k-1), 2^(k-1)]^3 for k in [0, C-1]
         self.cascades = max(1+int(np.ceil(np.log2(2*scale))), 1)
         self.grid_size = 128
-        self.register_buffer('density_grid',
-            torch.zeros(self.cascades, self.grid_size**3))
         self.register_buffer('density_bitfield',
             torch.zeros(self.cascades*self.grid_size**3//8, dtype=torch.uint8))
     
@@ -145,6 +143,13 @@ class NGP(nn.Module):
         return cells
 
     @torch.no_grad()
+    def mark_untrained_cells(self):
+        """
+        mark the cells that aren't covered by the cameras with density -1
+        """
+        pass
+
+    @torch.no_grad()
     def update_density_grid(self, density_threshold, warmup=False, decay=0.95):
         # create temporary grid
         tmp_grid = -torch.ones_like(self.density_grid)
@@ -156,12 +161,12 @@ class NGP(nn.Module):
         # infer sigmas
         for c in range(self.cascades):
             indices, coords = cells[c]
-            xyzs = coords.float()/(self.grid_size-1)*2-1 # in [-1, 1]
+            xyzs = coords/(self.grid_size-1)*2-1 # in [-1, 1]
             s = min(2**(c-1), self.scale)
             half_grid_size = s/self.grid_size
             # scale to current cascade's resolution
             xyzs_c = xyzs * (s-half_grid_size)
-            # add noise in [-hgs, hgs]
+            # pick random position in the cell by adding noise in [-hgs, hgs]
             xyzs_c += (torch.rand_like(xyzs_c)*2-1) * half_grid_size
             tmp_grid[c, indices] = self.density(xyzs_c)
 
@@ -174,3 +179,5 @@ class NGP(nn.Module):
         # pack to bitfield
         vren.packbits(self.density_grid, min(self.mean_density, density_threshold),
                       self.density_bitfield)
+
+        # TODO: max pooling? https://github.com/NVlabs/instant-ngp/blob/master/src/testbed_nerf.cu#L578
