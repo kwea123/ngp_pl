@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from einops import reduce
 
 
 class NeRFLoss(nn.Module):
@@ -11,7 +10,7 @@ class NeRFLoss(nn.Module):
 
     def forward(self, results, rgbs, **kwargs):
         d = {}
-        d['rgb'] = reduce((results['rgb']-rgbs)**2, 'n c -> n', 'mean')
+        d['rgb'] = (results['rgb']-rgbs)**2
 
         o = results['opacity']+1e-8
         # encourage opacity to be either 0 or 1 to avoid floater
