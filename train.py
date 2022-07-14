@@ -84,6 +84,8 @@ class NeRFSystem(LightningModule):
         kwargs = {'root_dir': hparams.root_dir,
                   'downsample': hparams.downsample}
         self.train_dataset = dataset(split=hparams.split, **kwargs)
+        self.train_dataset.batch_size = hparams.batch_size
+
         self.test_dataset = dataset(split='test', **kwargs)
 
     def configure_optimizers(self):
@@ -95,7 +97,6 @@ class NeRFSystem(LightningModule):
         return [self.opt], [self.sch]
 
     def train_dataloader(self):
-        self.train_dataset.batch_size = hparams.batch_size
         return DataLoader(self.train_dataset,
                           num_workers=16,
                           persistent_workers=True,
