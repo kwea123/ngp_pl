@@ -36,7 +36,7 @@ class NGP(nn.Module):
                     "n_features_per_level": F,
                     "log2_hashmap_size": log2_T,
                     "base_resolution": N_min,
-                    "per_level_scale": np.exp(np.log(4096*scale/N_min)/(L-1)),
+                    "per_level_scale": np.exp(np.log(2048*scale/N_min)/(L-1)),
                 },
                 network_config={
                     "otype": "FullyFusedMLP",
