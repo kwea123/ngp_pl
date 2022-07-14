@@ -57,11 +57,11 @@ Use `test.ipynb` to generate images. Lego pretrained model is available [here](h
 
 I compared the quality (average testing PSNR on `Synthetic-NeRF`) and the inference speed (on `Lego` scene) v.s. the concurrent work torch-ngp (default settings) and the paper, all trained for about 5 minutes:
 
-| Method    | avg PSNR | FPS   | 
-| :---:     | :---:    | :---: |
-| torch-ngp | 31.46    | 18.2  |
-| mine      | 32.76    | 36.2  |
-| instant-ngp paper | **33.18** | **60** |
+| Method    | avg PSNR | FPS   | GPU     |
+| :---:     | :---:    | :---: | :---:   |
+| torch-ngp | 31.46    | 18.2  | 2080 Ti |
+| mine      | 32.96    | 36.2  | 2080 Ti |
+| instant-ngp paper | **33.18** | **60** | 3090 |
 
 As for quality, mine is slightly better than torch-ngp, but the result might fluctuate across different runs.
 
@@ -80,16 +80,18 @@ More details are in the following section.
 
 To run benchmarks, use the scripts under `benchmarking`.
 
-Followings are my results (qualitative results [here](https://github.com/kwea123/ngp_pl/issues/7)):
+Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here](https://github.com/kwea123/ngp_pl/issues/7)):
 
 <details>
   <summary>Synthetic-NeRF</summary>
 
 |       | Mic   | Ficus | Chair | Hotdog | Materials | Drums | Ship  | Lego  | AVG   |
 | :---: | :---: | :---: | :---: | :---:  | :---:     | :---: | :---: | :---: | :---: |
-| PSNR  | 35.75 | 34.05 | 35.20 | 36.99  | 29.42     | 25.68 | 29.62 | 35.39 | 32.76 |
+| PSNR  | 35.59 | 34.13 | 35.28 | 37.35  | 29.46     | 25.81 | 30.32 | 35.76 | 32.96 |
+| SSIM  | 0.988 | 0.982 | 0.984 | 0.980  | 0.944     | 0.933 | 0.890 | 0.979 | 0.960 |
+| LPIPS | 0.017 | 0.024 | 0.025 | 0.038  | 0.070     | 0.076 | 0.133 | 0.022 | 0.051 |
 | FPS   | 40.81 | 34.02 | 49.80 | 25.06  | 20.08     | 37.77 | 15.77 | 36.20 | 32.44 |
-| Training time | 3m53s | 3m50s | 4m12s | 6m10s | 5m12s | 4m28s | 7m16s | 4m55s | 5m00s |
+| Training time | 3m9s | 3m12s | 4m17s | 5m53s | 4m55s | 4m7s | 9m20s | 5m5s | 5m00s |
 
 </details>
 
@@ -98,9 +100,11 @@ Followings are my results (qualitative results [here](https://github.com/kwea123
 
 |       | Wineholder | Steamtrain | Toad | Robot | Bike | Palace | Spaceship | Lifestyle | AVG | 
 | :---: | :---: | :---: | :---: | :---: | :---:  | :---:  | :---: | :---: | :---: |
-| PSNR  | 31.66 | 36.15 | 35.24 | 36.38 | 37.49 | 36.88 | 35.46 | 34.68 | 35.49 |
+| PSNR  | 31.64 | 36.47 | 35.57 | 37.10 | 37.87 | 37.41 | 35.58 | 34.76 | 35.80 |
+| SSIM  | 0.962 | 0.987 | 0.980 | 0.994 | 0.990 | 0.977 | 0.980 | 0.967 | 0.980 |
+| LPIPS | 0.047 | 0.023 | 0.024 | 0.010 | 0.015 | 0.021 | 0.029 | 0.044 | 0.027 |
 | FPS   | 47.07 | 75.17 | 50.42 | 64.87 | 66.88 | 28.62 | 35.55 | 22.84 | 48.93 |
-| Training time | 4m21s | 4m12s | 4m41s | 3m59s | 3m52s | 5m39s | 4m07s | 5m04s | 4m49s |
+| Training time | 3m58s | 3m44s | 7m22s | 3m25s | 3m11s | 6m45s | 3m25s | 4m56s | 4m36s |
 
 </details>
 
@@ -113,6 +117,7 @@ Followings are my results (qualitative results [here](https://github.com/kwea123
 | **FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
 
 *Trained with `downsample=0.5` (due to insufficient RAM) and evaluated with `downsample=1.0`
+
 **Evaluated on `test-traj`
 
 </details>
