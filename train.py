@@ -34,6 +34,7 @@ from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.utilities.distributed import all_gather_ddp_if_available
 
 from utils import slim_ckpt
 
@@ -56,9 +57,8 @@ class NeRFSystem(LightningModule):
         self.loss = NeRFLoss()
         self.train_psnr = PeakSignalNoiseRatio(data_range=1)
         self.val_psnr = PeakSignalNoiseRatio(data_range=1)
-        # compute the following causes CUDA OOM...
-        # self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)
-        # self.val_lpips = LearnedPerceptualImagePatchSimilarity('vgg')
+        self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)
+        self.val_lpips = LearnedPerceptualImagePatchSimilarity('vgg')
 
         self.model = NGP(scale=hparams.scale)
         # save grid coordinates for training
@@ -147,14 +147,23 @@ class NeRFSystem(LightningModule):
         rays, rgb_gt = batch['rays'], batch['rgb'].cpu()
         results = self(rays, split='test')
 
+        logs = {}
+
         with torch.no_grad():
+            # compute each metric per image
             self.val_psnr(results['rgb'], rgb_gt)
+            logs['psnr'] = self.val_psnr.compute()
+            self.val_psnr.reset()
 
             w, h = self.train_dataset.img_wh
             rgb_pred = rearrange(results['rgb'], '(h w) c -> 1 c h w', h=h)
             rgb_gt = rearrange(rgb_gt, '(h w) c -> 1 c h w', h=h)
-            # self.val_ssim(rgb_pred, rgb_gt)
-            # self.val_lpips(rgb_pred*2-1, rgb_gt*2-1)
+            self.val_ssim(rgb_pred, rgb_gt)
+            logs['ssim'] = self.val_ssim.compute()
+            self.val_ssim.reset()
+            self.val_lpips(rgb_pred*2-1, rgb_gt*2-1)
+            logs['lpips'] = self.val_lpips.compute()
+            self.val_lpips.reset()
 
         if not hparams.no_save_test: # save test image to disk
             idx = batch['idx']
@@ -165,9 +174,17 @@ class NeRFSystem(LightningModule):
             imageio.imsave(os.path.join(self.val_dir, f'{idx:03d}_d.png'), depth)
 
     def validation_epoch_end(self, outputs):
-        self.log('test/psnr', self.val_psnr, prog_bar=True)
-        # self.log('test/ssim', self.val_ssim)
-        # self.log('test/lpips_vgg', self.val_lpips)
+        psnrs = torch.stack([x['psnr'] for x in outputs])
+        ssims = torch.stack([x['ssim'] for x in outputs])
+        lpipss = torch.stack([x['lpips'] for x in outputs])
+
+        mean_psnr = all_gather_ddp_if_available(psnrs).mean()
+        mean_ssim = all_gather_ddp_if_available(ssims).mean()
+        mean_lpips = all_gather_ddp_if_available(lpipss).mean()
+
+        self.log('test/psnr', mean_psnr, prog_bar=True)
+        self.log('test/ssim', mean_ssim)
+        self.log('test/lpips_vgg', mean_lpips)
 
 
 if __name__ == '__main__':
