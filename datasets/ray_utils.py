@@ -18,17 +18,17 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
         uv: (H, W, 2) or (H*W, 2) image coordinates
     """
     grid = create_meshgrid(H, W, False, device='cuda')[0] # (H, W, 2)
-    i, j = grid.unbind(-1)
+    u, v = grid.unbind(-1)
 
     fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
     if random:
         directions = \
-            torch.stack([(i-cx+torch.rand_like(i))/fx,
-                         -(j-cy+torch.rand_like(i))/fy,
-                         -torch.ones_like(i)], -1)
+            torch.stack([(u-cx+torch.rand_like(u))/fx,
+                         -(v-cy+torch.rand_like(v))/fy,
+                         -torch.ones_like(u)], -1)
     else: # pass by the center
         directions = \
-            torch.stack([(i-cx+0.5)/fx, -(j-cy+0.5)/fy, -torch.ones_like(i)], -1)
+            torch.stack([(u-cx+0.5)/fx, -(v-cy+0.5)/fy, -torch.ones_like(u)], -1)
     if flatten:
         directions = directions.reshape(-1, 3)
         grid = grid.reshape(-1, 2)
