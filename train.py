@@ -149,7 +149,8 @@ class NeRFSystem(LightningModule):
         self.val_ssim(rgb_pred, rgb_gt)
         logs['ssim'] = self.val_ssim.compute()
         self.val_ssim.reset()
-        self.val_lpips(rgb_pred*2-1, rgb_gt*2-1)
+        self.val_lpips(torch.clip(rgb_pred*2-1, -1, 1),
+                       torch.clip(rgb_gt*2-1, -1, 1))
         logs['lpips'] = self.val_lpips.compute()
         self.val_lpips.reset()
 
