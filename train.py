@@ -59,6 +59,8 @@ class NeRFSystem(LightningModule):
         self.val_psnr = PeakSignalNoiseRatio(data_range=1)
         self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)
         self.val_lpips = LearnedPerceptualImagePatchSimilarity('vgg')
+        for p in self.val_lpips.net.parameters():
+            p.requires_grad = False
 
         self.model = NGP(scale=hparams.scale)
         # save grid coordinates for training
@@ -71,8 +73,7 @@ class NeRFSystem(LightningModule):
         self.S = 16 # the interval to update density grid
 
     def forward(self, rays, split):
-        kwargs = {'test_time': split!='train',
-                  'to_cpu': split!='train'}
+        kwargs = {'test_time': split!='train'}
         if hparams.dataset_name == 'colmap':
             kwargs['exp_step_factor'] = 1/256
 
@@ -144,11 +145,10 @@ class NeRFSystem(LightningModule):
             os.makedirs(self.val_dir, exist_ok=True)
 
     def validation_step(self, batch, batch_nb):
-        rays, rgb_gt = batch['rays'], batch['rgb'].cpu()
+        rays, rgb_gt = batch['rays'], batch['rgb']
         results = self(rays, split='test')
 
         logs = {}
-
         with torch.no_grad():
             # compute each metric per image
             self.val_psnr(results['rgb'], rgb_gt)
@@ -167,11 +167,13 @@ class NeRFSystem(LightningModule):
 
         if not hparams.no_save_test: # save test image to disk
             idx = batch['idx']
-            rgb_pred = rearrange(results['rgb'].numpy(), '(h w) c -> h w c', h=h)
+            rgb_pred = rearrange(results['rgb'].cpu().numpy(), '(h w) c -> h w c', h=h)
             rgb_pred = (rgb_pred*255).astype(np.uint8)
-            depth = depth2img(rearrange(results['depth'].numpy(), '(h w) -> h w', h=h))
+            depth = depth2img(rearrange(results['depth'].cpu().numpy(), '(h w) -> h w', h=h))
             imageio.imsave(os.path.join(self.val_dir, f'{idx:03d}.png'), rgb_pred)
             imageio.imsave(os.path.join(self.val_dir, f'{idx:03d}_d.png'), depth)
+
+        return logs
 
     def validation_epoch_end(self, outputs):
         psnrs = torch.stack([x['psnr'] for x in outputs])
