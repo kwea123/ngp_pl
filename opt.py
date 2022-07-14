@@ -26,8 +26,6 @@ def get_opts():
     parser.add_argument('--num_gpus', type=int, default=1,
                         help='number of gpus')
 
-    parser.add_argument('--hard_sampling', action='store_true', default=False,
-                        help='whether to hard sample rays with high loss')
     parser.add_argument('--no_save_test', action='store_true', default=False,
                         help='whether to save test image and video')
 
