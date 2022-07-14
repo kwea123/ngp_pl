@@ -7,7 +7,10 @@ class BaseDataset(Dataset):
     """
     Define length and sampling method
     """
-    def __init__(self):
+    def __init__(self, root_dir, split='train', downsample=1.0):
+        self.root_dir = root_dir
+        self.split = split
+        self.downsample = downsample
         self.define_transforms()
 
     def define_transforms(self):
@@ -26,6 +29,7 @@ class BaseDataset(Dataset):
                       'idxs': idxs}
         else:
             sample = {'rays': self.rays[idx][:, :6],
-                      'rgb': self.rays[idx][:, 6:9]}
+                      'rgb': self.rays[idx][:, 6:9],
+                      'idx': idx}
 
         return sample

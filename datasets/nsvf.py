@@ -13,10 +13,7 @@ from .base import BaseDataset
 
 class NSVFDataset(BaseDataset):
     def __init__(self, root_dir, split='train', downsample=1.0, **kwargs):
-        super().__init__()
-        self.root_dir = root_dir
-        self.split = split
-        self.downsample = downsample
+        super().__init__(root_dir, split, downsample)
 
         xyz_min, xyz_max = \
             np.loadtxt(os.path.join(root_dir, 'bbox.txt'))[:6].reshape(2, 3)
@@ -36,20 +33,20 @@ class NSVFDataset(BaseDataset):
                 w, h = int(1920*downsample), int(1080*downsample)
             fx *= downsample; fy *= downsample
 
-            K = np.float32([[fx, 0, w/2],
-                            [0, fy, h/2],
-                            [0,  0,   1]])
+            self.K = np.float32([[fx, 0, w/2],
+                                 [0, fy, h/2],
+                                 [0,  0,   1]])
         else:
-            K = np.loadtxt(os.path.join(root_dir, 'intrinsics.txt'),
-                           dtype=np.float32)[:3, :3]
+            self.K = np.loadtxt(os.path.join(root_dir, 'intrinsics.txt'),
+                                dtype=np.float32)[:3, :3]
             if 'BlendedMVS' in root_dir:
                 w, h = int(768*downsample), int(576*downsample)
             elif 'Tanks' in root_dir:
                 w, h = int(1920*downsample), int(1080*downsample)
-            K[:2] *= downsample
+            self.K[:2] *= downsample
 
         self.img_wh = (w, h)
-        self.directions = get_ray_directions(h, w, K)
+        self.directions = get_ray_directions(h, w, self.K)
 
         if split.startswith('train'):
             rays_train = self.read_meta('train')
@@ -89,12 +86,14 @@ class NSVFDataset(BaseDataset):
             imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
             poses = sorted(glob.glob(os.path.join(self.root_dir, 'pose', prefix+'*.txt')))
 
+            self.poses = []
             print(f'Loading {len(imgs)} {split} images ...')
             for idx, (img, pose) in enumerate(tqdm(zip(imgs, poses))):
                 c2w = np.loadtxt(pose)[:3]
                 c2w[:, 1:3] *= -1 # [right down front] to [right up back]
                 c2w[:, 3] -= self.shift
                 c2w[:, 3] /= 2*self.scale # to bound the scene inside [-0.5, 0.5]
+                self.poses += [c2w]
 
                 rays_o, rays_d = \
                     get_rays(self.directions, torch.cuda.FloatTensor(c2w))
