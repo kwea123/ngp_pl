@@ -193,7 +193,6 @@ if __name__ == '__main__':
 
     trainer = Trainer(max_epochs=hparams.num_epochs,
                       check_val_every_n_epoch=hparams.num_epochs,
-                      reload_dataloaders_every_n_epochs=1 if hparams.hard_sampling else 0,
                       callbacks=callbacks,
                       logger=logger,
                       enable_model_summary=False,
