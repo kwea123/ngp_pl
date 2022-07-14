@@ -149,21 +149,20 @@ class NeRFSystem(LightningModule):
         results = self(rays, split='test')
 
         logs = {}
-        with torch.no_grad():
-            # compute each metric per image
-            self.val_psnr(results['rgb'], rgb_gt)
-            logs['psnr'] = self.val_psnr.compute()
-            self.val_psnr.reset()
+        # compute each metric per image
+        self.val_psnr(results['rgb'], rgb_gt)
+        logs['psnr'] = self.val_psnr.compute()
+        self.val_psnr.reset()
 
-            w, h = self.train_dataset.img_wh
-            rgb_pred = rearrange(results['rgb'], '(h w) c -> 1 c h w', h=h)
-            rgb_gt = rearrange(rgb_gt, '(h w) c -> 1 c h w', h=h)
-            self.val_ssim(rgb_pred, rgb_gt)
-            logs['ssim'] = self.val_ssim.compute()
-            self.val_ssim.reset()
-            self.val_lpips(rgb_pred*2-1, rgb_gt*2-1)
-            logs['lpips'] = self.val_lpips.compute()
-            self.val_lpips.reset()
+        w, h = self.train_dataset.img_wh
+        rgb_pred = rearrange(results['rgb'], '(h w) c -> 1 c h w', h=h)
+        rgb_gt = rearrange(rgb_gt, '(h w) c -> 1 c h w', h=h)
+        self.val_ssim(rgb_pred, rgb_gt)
+        logs['ssim'] = self.val_ssim.compute()
+        self.val_ssim.reset()
+        self.val_lpips(rgb_pred*2-1, rgb_gt*2-1)
+        logs['lpips'] = self.val_lpips.compute()
+        self.val_lpips.reset()
 
         if not hparams.no_save_test: # save test image to disk
             idx = batch['idx']
