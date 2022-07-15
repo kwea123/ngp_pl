@@ -13,6 +13,7 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
         K: (3, 3) camera intrinsics
         random: whether the ray passes randomly inside the pixel
         return_uv: whether to return uv image coordinates
+
     Outputs: (shape depends on @flatten)
         directions: (H, W, 3) or (H*W, 3), the direction of the rays in camera coordinate
         uv: (H, W, 2) or (H*W, 2) image coordinates
