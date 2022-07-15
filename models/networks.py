@@ -21,7 +21,7 @@ class NGP(nn.Module):
         self.cascades = max(1+int(np.ceil(np.log2(2*scale))), 1)
         self.grid_size = 128
         self.register_buffer('density_bitfield',
-            torch.zeros(self.cascades*self.grid_size**3//8, dtype=torch.uint8)+255)
+            torch.zeros(self.cascades*self.grid_size**3//8, dtype=torch.uint8))
     
         # constants
         L = 16; F = 2; log2_T = 19; N_min = 16
