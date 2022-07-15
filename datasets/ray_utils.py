@@ -4,7 +4,7 @@ from kornia import create_meshgrid
 
 def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
     """
-    Get ray directions for all pixels in camera coordinate.
+    Get ray directions for all pixels in camera coordinate [right down front].
     Reference: https://www.scratchapixel.com/lessons/3d-basic-rendering/
                ray-tracing-generating-camera-rays/standard-coordinate-systems
 
@@ -24,11 +24,11 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
     if random:
         directions = \
             torch.stack([(u-cx+torch.rand_like(u))/fx,
-                         -(v-cy+torch.rand_like(v))/fy,
-                         -torch.ones_like(u)], -1)
+                         (v-cy+torch.rand_like(v))/fy,
+                         torch.ones_like(u)], -1)
     else: # pass by the center
         directions = \
-            torch.stack([(u-cx+0.5)/fx, -(v-cy+0.5)/fy, -torch.ones_like(u)], -1)
+            torch.stack([(u-cx+0.5)/fx, (v-cy+0.5)/fy, torch.ones_like(u)], -1)
     if flatten:
         directions = directions.reshape(-1, 3)
         grid = grid.reshape(-1, 2)

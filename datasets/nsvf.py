@@ -72,7 +72,7 @@ class NSVFDataset(BaseDataset):
                 poses = poses.reshape(-1, 4, 4)
             for idx, pose in enumerate(poses):
                 c2w = pose[:3]
-                c2w[:, :3] *= -1 # [left down front] to [right up back]
+                c2w[:, 1] *= -1 # [left down front] to [right down front]
                 c2w[:, 3] -= self.shift
                 c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
                 rays_o, rays_d = get_rays(self.directions, torch.FloatTensor(c2w))
@@ -90,7 +90,6 @@ class NSVFDataset(BaseDataset):
             print(f'Loading {len(imgs)} {split} images ...')
             for idx, (img, pose) in enumerate(tqdm(zip(imgs, poses))):
                 c2w = np.loadtxt(pose)[:3]
-                c2w[:, 1:3] *= -1 # [right down front] to [right up back]
                 c2w[:, 3] -= self.shift
                 c2w[:, 3] /= 2*self.scale # to bound the scene inside [-0.5, 0.5]
                 self.poses += [c2w]
@@ -109,5 +108,6 @@ class NSVFDataset(BaseDataset):
                     img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
 
                 rays[idx] = torch.cat([rays_o, rays_d, img], 1).cpu() # (h*w, 9)
+            self.poses = np.float32(self.poses)
 
         return rays
