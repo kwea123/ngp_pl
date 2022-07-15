@@ -22,7 +22,6 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from losses import NeRFLoss
 
 # metrics
-# from metrics import psnr
 from torchmetrics import (
     PeakSignalNoiseRatio, 
     StructuralSimilarityIndexMeasure
@@ -75,7 +74,7 @@ class NeRFSystem(LightningModule):
     def forward(self, rays, split):
         kwargs = {'test_time': split!='train'}
         if hparams.dataset_name == 'colmap':
-            kwargs['exp_step_factor'] = 1/256
+            kwargs['exp_step_factor'] = 1/512
 
         return render(self.model, rays, **kwargs)
 
@@ -108,6 +107,11 @@ class NeRFSystem(LightningModule):
                           num_workers=8,
                           batch_size=None,
                           pin_memory=True)
+
+    def on_train_start(self):
+        K = torch.cuda.FloatTensor(self.train_dataset.K)
+        poses = torch.cuda.FloatTensor(self.train_dataset.poses)
+        self.model.mark_untrained_cells(K, poses, self.train_dataset.img_wh)
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
@@ -180,10 +184,13 @@ class NeRFSystem(LightningModule):
 
 if __name__ == '__main__':
     hparams = get_opts()
+    if hparams.val_only and (not hparams.ckpt_path):
+        raise ValueError('You need to provide a @ckpt_path for validation!')
     system = NeRFSystem(hparams)
 
     ckpt_cb = ModelCheckpoint(dirpath=f'ckpts/{hparams.exp_name}',
                               filename='{epoch:d}',
+                              save_weights_only=True,
                               every_n_epochs=hparams.num_epochs,
                               save_on_train_epoch_end=True,
                               save_top_k=-1)
@@ -202,7 +209,7 @@ if __name__ == '__main__':
                       devices=hparams.num_gpus,
                       strategy=DDPPlugin(find_unused_parameters=False)
                                if hparams.num_gpus>1 else None,
-                      num_sanity_val_steps=0,
+                      num_sanity_val_steps=-1 if hparams.val_only else 0,
                       precision=16)
 
     trainer.fit(system, ckpt_path=hparams.ckpt_path)
@@ -216,6 +223,6 @@ if __name__ == '__main__':
                         [imageio.imread(img) for img in imgs[1::2]],
                         fps=30, macro_block_size=1)
 
-    # save slimmed ckpt for the last epoch
-    ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')
-    torch.save(ckpt_, f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
+    if not hparams.val_only: # save slimmed ckpt for the last epoch
+        ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')
+        torch.save(ckpt_, f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
