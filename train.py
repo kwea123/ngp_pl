@@ -74,7 +74,7 @@ class NeRFSystem(LightningModule):
     def forward(self, rays, split):
         kwargs = {'test_time': split!='train'}
         if hparams.dataset_name == 'colmap':
-            kwargs['exp_step_factor'] = 1/512
+            kwargs['exp_step_factor'] = 1/256
 
         return render(self.model, rays, **kwargs)
 
@@ -111,7 +111,7 @@ class NeRFSystem(LightningModule):
     def on_train_start(self):
         K = torch.cuda.FloatTensor(self.train_dataset.K)
         poses = torch.cuda.FloatTensor(self.train_dataset.poses)
-        self.model.mark_untrained_cells(K, poses, self.train_dataset.img_wh)
+        self.model.mark_invisible_cells(K, poses, self.train_dataset.img_wh)
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
