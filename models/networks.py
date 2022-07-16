@@ -22,7 +22,7 @@ class NGP(nn.Module):
         self.grid_size = 128
         self.register_buffer('density_bitfield',
             torch.zeros(self.cascades*self.grid_size**3//8, dtype=torch.uint8))
-    
+
         # constants
         L = 16; F = 2; log2_T = 19; N_min = 16
 
@@ -90,13 +90,14 @@ class NGP(nn.Module):
         """
         Inputs:
             x: (N, 3) xyz in [-scale, scale]
-            d: (N, 3) normalized direction in [-1, 1]
+            d: (N, 3) directions
 
         Outputs:
             sigmas: (N)
             rgbs: (N, 3)
         """
         sigmas, h = self.density(x, return_feat=True)
+        d /= torch.norm(d, dim=-1, keepdim=True)
         d = self.dir_encoder((d+1)/2)
         rgbs = self.rgb_net(torch.cat([d, h], 1))
 
