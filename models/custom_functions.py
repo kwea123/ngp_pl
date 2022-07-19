@@ -9,7 +9,7 @@ class RayAABBIntersector(torch.autograd.Function):
 
     Inputs:
         rays_o: (N_rays, 3) ray origins
-        rays_d: (N_rays, 3) normalized ray directions
+        rays_d: (N_rays, 3) ray directions
         centers: (N_voxels, 3) voxel centers
         half_sizes: (N_voxels, 3) voxel half sizes
         max_hits: maximum number of intersected voxels to keep for one ray
@@ -33,7 +33,7 @@ class RaySphereIntersector(torch.autograd.Function):
 
     Inputs:
         rays_o: (N_rays, 3) ray origins
-        rays_d: (N_rays, 3) normalized ray directions
+        rays_d: (N_rays, 3) ray directions
         centers: (N_spheres, 3) sphere centers
         radii: (N_spheres, 3) radii
         max_hits: maximum number of intersected spheres to keep for one ray
@@ -59,6 +59,7 @@ class RayMarcher(torch.autograd.Function):
         rays_d: (N_rays, 3) normalized ray directions
         hits_t: (N_rays, 2) near and far bounds from aabb intersection
         density_bitfield: (C*G**3//8)
+        cascades: int
         scale: float
         exp_step_factor: the exponential factor to scale the steps
         grid_size: int
@@ -76,7 +77,7 @@ class RayMarcher(torch.autograd.Function):
     @staticmethod
     @custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, rays_o, rays_d, hits_t,
-                density_bitfield, scale, exp_step_factor,
+                density_bitfield, cascades, scale, exp_step_factor,
                 grid_size, max_samples):
 
         # noise to perturb the first sample of each ray
@@ -85,7 +86,7 @@ class RayMarcher(torch.autograd.Function):
         rays_a, xyzs, dirs, deltas, ts, counter = \
             vren.raymarching_train(
                 rays_o, rays_d, hits_t,
-                density_bitfield, scale,
+                density_bitfield, cascades, scale,
                 exp_step_factor, noise, grid_size, max_samples)
 
         total_samples = counter[0] # total samples for all rays
