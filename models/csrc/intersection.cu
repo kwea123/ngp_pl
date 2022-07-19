@@ -100,6 +100,7 @@ std::vector<torch::Tensor> ray_aabb_intersect_cu(
 }
 
 
+// TODO: correct this to ray_d unnormalized!!!!!!!!
 __device__ __forceinline__ float2 _ray_sphere_intersect(
     const float3 ray_o,
     const float3 ray_d,
@@ -150,6 +151,7 @@ __global__ void ray_sphere_intersect_kernel(
         }
     }
 }
+
 
 std::vector<torch::Tensor> ray_sphere_intersect_cu(
     const torch::Tensor rays_o,

@@ -9,22 +9,21 @@ inline __host__ __device__ float signf(const float x) { return copysignf(1.0f, x
 // exponentially step t if f>0 (larger step size when sample moves away from the camera)
 // default exp_step_factor is 0 for blender, 1/256 for real scene
 inline __host__ __device__ float calc_dt(
-    float t, float exp_step_factor, float scale,
-    int max_samples, int grid_size, int cascades){
+    float t, float exp_step_factor, int max_samples, int grid_size, int cascades){
     return clamp(t*exp_step_factor,
-                 SQRT3*2*scale/max_samples,
-                 SQRT3*2*(1<<(cascades-1))/grid_size);
+                 SQRT3/max_samples,
+                 SQRT3*scalbnf(1.0f, cascades-1)/grid_size);
 }
 
 inline __device__ int mip_from_pos(const float x, const float y, const float z, const int cascades) {
     const float mx = fmaxf(fabsf(x), fmaxf(fabs(y), fabs(z)));
-    int exponent; frexpf(mx, &exponent); // [0, 0.5) --> -1, [0.5, 1) --> 0, [1, 2) --> 1, ...
-    return fminf(cascades-1, fmaxf(0, exponent+1));
+    int exponent; frexpf(mx, &exponent);
+    return min(cascades-1, max(0, exponent+1));
 }
 
 inline __device__ int mip_from_dt(float dt, int grid_size, int cascades) {
-    int exponent; frexpf(dt*2*grid_size, &exponent);
-    return fminf(cascades-1, fmaxf(0, exponent));
+    int exponent; frexpf(dt*grid_size, &exponent);
+    return min(cascades-1, max(0, exponent));
 }
 
 inline __host__ __device__ uint32_t __expand_bits(uint32_t v)
@@ -140,7 +139,7 @@ __global__ void raymarching_train_kernel(
     const int r = blockIdx.x * blockDim.x + threadIdx.x;
     if (r >= rays_o.size(0)) return;
 
-    const int grid_size3 = grid_size*grid_size*grid_size;
+    const uint32_t grid_size3 = grid_size*grid_size*grid_size;
 
     const float ox = rays_o[r][0], oy = rays_o[r][1], oz = rays_o[r][2];
     const float dx = rays_d[r][0], dy = rays_d[r][1], dz = rays_d[r][2];
@@ -148,8 +147,7 @@ __global__ void raymarching_train_kernel(
     float t1 = hits_t[r][0], t2 = hits_t[r][1];
 
     if (t1>=0) { // only perturb the starting t
-        const float dt = 
-            calc_dt(t1, exp_step_factor, scale, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t1, exp_step_factor, max_samples, grid_size, cascades);
         t1 += dt*noise[r];
     }
 
@@ -160,13 +158,12 @@ __global__ void raymarching_train_kernel(
     while (0<=t && t<t2 && N_samples<max_samples){
         const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
-        const float dt = 
-            calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
         const int mip = max(mip_from_pos(x, y, z, cascades),
                             mip_from_dt(dt, grid_size, cascades));
 
-        const float mip_bound = fminf(1<<mip, scale);
-        const float mip_bound_inv = 1.0f/mip_bound;
+        const float mip_bound = fminf(scalbnf(1.0f, mip-1), scale);
+        const float mip_bound_inv = 1/mip_bound;
 
         // round down to nearest grid position
         const int nx = clamp(0.5f*(x*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
@@ -188,7 +185,7 @@ __global__ void raymarching_train_kernel(
 
             const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
             do {
-                t += calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
+                t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
             } while (t < t_target);
         }
     }
@@ -200,20 +197,19 @@ __global__ void raymarching_train_kernel(
     rays_a[ray_count][0] = r;
     rays_a[ray_count][1] = start_idx; rays_a[ray_count][2] = N_samples;
 
-    if (N_samples==0 || start_idx+N_samples>=xyzs.size(0)) return;
+    if (N_samples==0) return;
 
     t = t1; int samples = 0;
 
     while (t<t2 && samples<N_samples){
         const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
-        const float dt = 
-            calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
         const int mip = max(mip_from_pos(x, y, z, cascades),
                             mip_from_dt(dt, grid_size, cascades));
 
-        const float mip_bound = fminf(1<<mip, scale);
-        const float mip_bound_inv = 1.0f/mip_bound;
+        const float mip_bound = fminf(scalbnf(1.0f, mip-1), scale);
+        const float mip_bound_inv = 1/mip_bound;
 
         // round down to nearest grid position
         const int nx = clamp(0.5f*(x*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
@@ -227,8 +223,7 @@ __global__ void raymarching_train_kernel(
             const int s = start_idx + samples;
             xyzs[s][0] = x; xyzs[s][1] = y; xyzs[s][2] = z;
             dirs[s][0] = dx; dirs[s][1] = dy; dirs[s][2] = dz;
-            ts[s] = t;
-            deltas[s] = dt; // interval for volume rendering integral
+            ts[s] = t; deltas[s] = dt;
             t += dt; samples++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
@@ -240,7 +235,7 @@ __global__ void raymarching_train_kernel(
 
             const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
             do {
-                t += calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
+                t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
             } while (t < t_target);
         }
     }
@@ -252,6 +247,7 @@ std::vector<torch::Tensor> raymarching_train_cu(
     const torch::Tensor rays_d,
     const torch::Tensor hits_t,
     const torch::Tensor density_bitfield,
+    const int cascades,
     const float scale,
     const float exp_step_factor,
     const torch::Tensor noise,
@@ -259,7 +255,6 @@ std::vector<torch::Tensor> raymarching_train_cu(
     const int max_samples
 ){
     const int N_rays = rays_o.size(0);
-    const int cascades = density_bitfield.size(0);
 
     // count the number of samples and the number of rays processed
     auto counter = torch::zeros({2}, torch::dtype(torch::kInt32).device(rays_o.device()));
@@ -284,10 +279,8 @@ std::vector<torch::Tensor> raymarching_train_cu(
             grid_size,
             scale,
             exp_step_factor,
-            // perturb,
             noise.packed_accessor32<float, 1, torch::RestrictPtrTraits>(),
             max_samples,
-            // rng,
             counter.data_ptr<int>(),
             rays_a.packed_accessor32<int, 2, torch::RestrictPtrTraits>(),
             xyzs.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
@@ -323,7 +316,7 @@ __global__ void raymarching_test_kernel(
     if (n >= alive_indices.size(0)) return;
 
     const size_t r = alive_indices[n]; // ray index
-    const int grid_size3 = grid_size*grid_size*grid_size;
+    const uint32_t grid_size3 = grid_size*grid_size*grid_size;
 
     const float ox = rays_o[r][0], oy = rays_o[r][1], oz = rays_o[r][2];
     const float dx = rays_d[r][0], dy = rays_d[r][1], dz = rays_d[r][2];
@@ -335,13 +328,12 @@ __global__ void raymarching_test_kernel(
     while (t<t2 && s<N_samples){
         const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
-        const float dt = 
-            calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
         const int mip = max(mip_from_pos(x, y, z, cascades),
                             mip_from_dt(dt, grid_size, cascades));
 
-        const float mip_bound = fminf(1<<mip, scale);
-        const float mip_bound_inv = 1.0f/mip_bound;
+        const float mip_bound = fminf(scalbnf(1.0f, mip-1), scale);
+        const float mip_bound_inv = 1/mip_bound;
 
         // round down to nearest grid position
         const int nx = clamp(0.5f*(x*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
@@ -354,8 +346,7 @@ __global__ void raymarching_test_kernel(
         if (occ) {
             xyzs[n][s][0] = x; xyzs[n][s][1] = y; xyzs[n][s][2] = z;
             dirs[n][s][0] = dx; dirs[n][s][1] = dy; dirs[n][s][2] = dz;
-            ts[n][s] = t;
-            deltas[n][s] = dt; // interval for volume rendering integral
+            ts[n][s] = t; deltas[n][s] = dt;
             t += dt;
             hits_t[r][0] = t; // modify the starting point for the next marching
             s++;
@@ -369,7 +360,7 @@ __global__ void raymarching_test_kernel(
 
             const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
             do {
-                t += calc_dt(t, exp_step_factor, scale, max_samples, grid_size, cascades);
+                t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
             } while (t < t_target);
         }
     }
@@ -383,6 +374,7 @@ std::vector<torch::Tensor> raymarching_test_cu(
     torch::Tensor hits_t,
     const torch::Tensor alive_indices,
     const torch::Tensor density_bitfield,
+    const int cascades,
     const float scale,
     const float exp_step_factor,
     const int grid_size,
@@ -390,7 +382,6 @@ std::vector<torch::Tensor> raymarching_test_cu(
     const int N_samples
 ){
     const int N_rays = alive_indices.size(0);
-    const int cascades = density_bitfield.size(0);
 
     auto xyzs = torch::zeros({N_rays, N_samples, 3}, rays_o.options());
     auto dirs = torch::zeros({N_rays, N_samples, 3}, rays_o.options());

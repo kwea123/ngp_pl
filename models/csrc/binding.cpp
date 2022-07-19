@@ -62,6 +62,7 @@ std::vector<torch::Tensor> raymarching_train(
     const torch::Tensor rays_d,
     const torch::Tensor hits_t,
     const torch::Tensor density_bitfield,
+    const int cascades,
     const float scale,
     const float exp_step_factor,
     const torch::Tensor noise,
@@ -75,8 +76,8 @@ std::vector<torch::Tensor> raymarching_train(
     CHECK_INPUT(noise);
 
     return raymarching_train_cu(
-        rays_o, rays_d, hits_t, density_bitfield, scale, exp_step_factor,
-        noise, grid_size, max_samples);
+        rays_o, rays_d, hits_t, density_bitfield, cascades,
+        scale, exp_step_factor, noise, grid_size, max_samples);
 }
 
 
@@ -86,6 +87,7 @@ std::vector<torch::Tensor> raymarching_test(
     torch::Tensor hits_t,
     const torch::Tensor alive_indices,
     const torch::Tensor density_bitfield,
+    const int cascades,
     const float scale,
     const float exp_step_factor,
     const int grid_size,
@@ -99,8 +101,8 @@ std::vector<torch::Tensor> raymarching_test(
     CHECK_INPUT(density_bitfield);
 
     return raymarching_test_cu(
-        rays_o, rays_d, hits_t, alive_indices, density_bitfield, scale, exp_step_factor,
-        grid_size, max_samples, N_samples);
+        rays_o, rays_d, hits_t, alive_indices, density_bitfield, cascades,
+        scale, exp_step_factor, grid_size, max_samples, N_samples);
 }
 
 
