@@ -5,6 +5,8 @@ import vren
 from .custom_functions import TruncExp
 import numpy as np
 
+from .rendering import NEAR_DISTANCE
+
 
 class NGP(nn.Module):
     def __init__(self, scale=0.5):
@@ -167,7 +169,7 @@ class NGP(nn.Module):
                 xyzs_c = w2c_R @ xyzs_w + w2c_T # (N, 3, chunk)
                 uvd = K @ xyzs_c
                 uv = uvd[:, :2]/uvd[:, 2:] # (N, 2, chunk)
-                valid_mask = (uvd[:, 2]>0)& \
+                valid_mask = (uvd[:, 2]>=NEAR_DISTANCE)& \
                              (uv[:, 0]>=0)&(uv[:, 0]<img_wh[0])& \
                              (uv[:, 1]>=0)&(uv[:, 1]<img_wh[1]) # (N, chunk)
                 self.density_grid[c, indices[i:i+chunk]] = \
