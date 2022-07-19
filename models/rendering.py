@@ -4,7 +4,8 @@ from .custom_functions import \
 from einops import rearrange
 import vren
 
-MAX_SAMPLES = 1024 # fixed!
+MAX_SAMPLES = 1024
+NEAR_DISTANCE = 0.05
 
 
 def render(model, rays, **kwargs):
@@ -24,6 +25,8 @@ def render(model, rays, **kwargs):
     rays_o, rays_d = rays[:, 0:3].contiguous(), rays[:, 3:6].contiguous()
     _, hits_t, _ = \
         RayAABBIntersector.apply(rays_o, rays_d, model.center, model.half_size, 1)
+    hits_t[(hits_t[:, 0, 0]>0)&
+           (hits_t[:, 0, 0]<NEAR_DISTANCE), 0, 0] = NEAR_DISTANCE
 
     if kwargs.get('test_time', False):
         render_func = __render_rays_test
@@ -71,7 +74,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
 
         xyzs, dirs, deltas, ts, N_eff_samples = \
             vren.raymarching_test(rays_o, rays_d, hits_t[:, 0], alive_indices,
-                                  model.density_bitfield,
+                                  model.density_bitfield, model.cascades,
                                   model.scale, kwargs.get('exp_step_factor', 0.),
                                   model.grid_size, MAX_SAMPLES, N_samples)
         xyzs = rearrange(xyzs, 'n1 n2 c -> (n1 n2) c')
@@ -116,7 +119,8 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
 
     rays_a, xyzs, dirs, deltas, ts = \
         RayMarcher.apply(
-            rays_o, rays_d, hits_t[:, 0], model.density_bitfield, model.scale,
+            rays_o, rays_d, hits_t[:, 0], model.density_bitfield,
+            model.cascades, model.scale,
             kwargs.get('exp_step_factor', 0.), model.grid_size, MAX_SAMPLES)
 
     sigmas, rgbs = model(xyzs, dirs)
