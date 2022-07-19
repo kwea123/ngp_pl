@@ -197,8 +197,6 @@ __global__ void raymarching_train_kernel(
     rays_a[ray_count][0] = r;
     rays_a[ray_count][1] = start_idx; rays_a[ray_count][2] = N_samples;
 
-    if (N_samples==0) return;
-
     t = t1; int samples = 0;
 
     while (t<t2 && samples<N_samples){
