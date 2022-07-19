@@ -100,7 +100,7 @@ __global__ void composite_train_bw_kernel(
     int samples = 0;
     scalar_t R = rgb[ray_idx][0], G = rgb[ray_idx][1], B = rgb[ray_idx][2];
     scalar_t O = opacity[ray_idx], D = depth[ray_idx];
-    scalar_t T = 1.0f, r = 0.0f, g = 0.0f, b = 0.0f, op = 0.0f, t = 0.0f, d = 0.0f;
+    scalar_t T = 1.0f, r = 0.0f, g = 0.0f, b = 0.0f, op = 0.0f, d = 0.0f;
 
     while (samples < N_samples) {
         const int s = start_idx + samples;
@@ -122,7 +122,7 @@ __global__ void composite_train_bw_kernel(
             dL_drgb[ray_idx][1]*(rgbs[s][1]*T-(G-g)) + 
             dL_drgb[ray_idx][2]*(rgbs[s][2]*T-(B-b)) + 
             dL_dopacity[ray_idx]*(1-O) + 
-            dL_ddepth[ray_idx]*(t*T-(D-d))
+            dL_ddepth[ray_idx]*(ts[s]*T-(D-d))
         );
 
         if (T <= T_threshold) break; // ray has enough opacity
