@@ -14,7 +14,7 @@ from datasets import dataset_dict
 # models
 from kornia.utils.grid import create_meshgrid3d
 from models.networks import NGP
-from models.rendering import render
+from models.rendering import render, MAX_SAMPLES
 
 # optimizer, losses
 from apex.optimizers import FusedAdam
@@ -115,7 +115,7 @@ class NeRFSystem(LightningModule):
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
-            self.model.update_density_grid(hparams.density_threshold,
+            self.model.update_density_grid(hparams.alpha_threshold*MAX_SAMPLES/3**0.5,
                                            warmup=self.global_step<256)
 
         rays, rgb = batch['rays'], batch['rgb']

@@ -16,8 +16,8 @@ def get_opts():
 
     parser.add_argument('--scale', type=float, default=0.5,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
-    parser.add_argument('--density_threshold', type=float, default=10.0,
-                        help='density threshold below which a cell is considered empty')
+    parser.add_argument('--alpha_threshold', type=float, default=0.01,
+                        help='alpha threshold below which a cell is considered empty')
 
     parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
