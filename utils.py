@@ -26,7 +26,7 @@ def load_ckpt(model, ckpt_path, model_name='model', prefixes_to_ignore=[]):
 
 
 def slim_ckpt(ckpt_path):
-    ckpt = torch.load(ckpt_path)
+    ckpt = torch.load(ckpt_path, map_location='cpu')
     # pop unused parameters
     keys_to_pop = []
     for k in ckpt['state_dict']:
