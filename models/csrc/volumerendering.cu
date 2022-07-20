@@ -143,7 +143,6 @@ std::vector<torch::Tensor> composite_train_bw_cu(
     const torch::Tensor opacity,
     const torch::Tensor depth,
     const torch::Tensor rgb,
-    // const torch::Tensor rgb_bg,
     const float T_threshold
 ){
     const int N = sigmas.size(0), N_rays = rays_a.size(0);

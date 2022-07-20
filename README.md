@@ -33,7 +33,7 @@ This implementation has **strict** requirements due to dependencies on other lib
     * Install `apex` following their [instruction](https://github.com/NVIDIA/apex#linux)
     * Install core requirements by `pip install -r requirements.txt`
 
-* Cuda extension: Upgrade `pip` to >= 22.1 and run `pip install models/csrc/`
+* Cuda extension: Upgrade `pip` to >= 22.1 and run `pip install models/csrc/` (please run this each time you `pull` the code)
 
 # :books: Data preparation
 

@@ -191,8 +191,8 @@ __global__ void raymarching_train_kernel(
     }
 
     // second pass: write to output
-    int start_idx = atomicAdd(counter, N_samples);
-    int ray_count = atomicAdd(counter+1, 1);
+    const int start_idx = atomicAdd(counter, N_samples);
+    const int ray_count = atomicAdd(counter+1, 1);
 
     rays_a[ray_count][0] = r;
     rays_a[ray_count][1] = start_idx; rays_a[ray_count][2] = N_samples;
@@ -225,13 +225,12 @@ __global__ void raymarching_train_kernel(
             t += dt; samples++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            const int res = grid_size>>mip;
-            const float px = x*res, py = y*res, pz = z*res;
-            const float tx = (floorf(px+0.5f*(1+signf(dx)))-px)*dx_inv;
-            const float ty = (floorf(py+0.5f*(1+signf(dy)))-py)*dy_inv;
-            const float tz = (floorf(pz+0.5f*(1+signf(dz)))-pz)*dz_inv;
+            const float grid_size_inv = 1.0f/grid_size;
+            const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
+            const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
+            const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
 
-            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
+            const float t_target = t + fmaxf(0.0f, fminf(tx, fminf(ty, tz)));
             do {
                 t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
             } while (t < t_target);
@@ -350,13 +349,12 @@ __global__ void raymarching_test_kernel(
             s++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            const int res = grid_size>>mip;
-            const float px = x*res, py = y*res, pz = z*res;
-            const float tx = (floorf(px+0.5f*(1+signf(dx)))-px)*dx_inv;
-            const float ty = (floorf(py+0.5f*(1+signf(dy)))-py)*dy_inv;
-            const float tz = (floorf(pz+0.5f*(1+signf(dz)))-pz)*dz_inv;
+            const float grid_size_inv = 1.0f/grid_size;
+            const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
+            const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
+            const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
 
-            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
+            const float t_target = t + fmaxf(0.0f, fminf(tx, fminf(ty, tz)));
             do {
                 t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
             } while (t < t_target);

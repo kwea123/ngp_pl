@@ -12,12 +12,11 @@ __global__ void packbits_kernel(
     const int n = threadIdx.x + blockIdx.x * blockDim.x;
     if (n >= N) return;
 
-    density_grid += n * 8;
     uint8_t bits = 0;
 
     #pragma unroll 8
     for (uint8_t i = 0; i < 8; i++) {
-        bits |= (density_grid[i] > density_threshold) ? ((uint8_t)1 << i) : 0;
+        bits |= (density_grid[8*n+i]>density_threshold) ? ((uint8_t)1<<i) : 0;
     }
 
     density_bitfield[n] = bits;
