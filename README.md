@@ -37,7 +37,7 @@ This implementation has **strict** requirements due to dependencies on other lib
 
 # :books: Data preparation
 
-Download preprocessed datasets from [NSVF](https://github.com/facebookresearch/NSVF#dataset).
+Download preprocessed datasets from [NSVF](https://github.com/facebookresearch/NSVF#dataset). **Do not change the folder names** since there is some hard-coded fix in my dataloader.
 
 # :key: Training
 

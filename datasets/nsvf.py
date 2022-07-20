@@ -26,12 +26,11 @@ class NSVFDataset(BaseDataset):
             elif 'Lego' in root_dir: self.scale *= 1.1
             ###################################################
             with open(os.path.join(root_dir, 'intrinsics.txt')) as f:
-                fx = fy = float(f.readline().split()[0])
+                fx = fy = float(f.readline().split()[0]) * downsample
             if 'Synthetic' in root_dir:
                 w = h = int(800*downsample)
             else:
                 w, h = int(1920*downsample), int(1080*downsample)
-            fx *= downsample; fy *= downsample
 
             self.K = np.float32([[fx, 0, w/2],
                                  [0, fy, h/2],
