@@ -100,7 +100,7 @@ __global__ void composite_train_bw_kernel(
     int samples = 0;
     scalar_t R = rgb[ray_idx][0], G = rgb[ray_idx][1], B = rgb[ray_idx][2];
     scalar_t O = opacity[ray_idx], D = depth[ray_idx];
-    scalar_t T = 1.0f, r = 0.0f, g = 0.0f, b = 0.0f, op = 0.0f, d = 0.0f;
+    scalar_t T = 1.0f, r = 0.0f, g = 0.0f, b = 0.0f, d = 0.0f;
 
     while (samples < N_samples) {
         const int s = start_idx + samples;
@@ -109,7 +109,6 @@ __global__ void composite_train_bw_kernel(
 
         r += w*rgbs[s][0]; g += w*rgbs[s][1]; b += w*rgbs[s][2];
         d += w*ts[s];
-        op += w;
         T *= 1.0f-a;
 
         // compute gradients by math...
