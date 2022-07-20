@@ -57,9 +57,10 @@ class NeRFSystem(LightningModule):
         self.train_psnr = PeakSignalNoiseRatio(data_range=1)
         self.val_psnr = PeakSignalNoiseRatio(data_range=1)
         self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)
-        self.val_lpips = LearnedPerceptualImagePatchSimilarity('vgg')
-        for p in self.val_lpips.net.parameters():
-            p.requires_grad = False
+        if hparams.eval_lpips:
+            self.val_lpips = LearnedPerceptualImagePatchSimilarity('vgg')
+            for p in self.val_lpips.net.parameters():
+                p.requires_grad = False
 
         self.model = NGP(scale=hparams.scale)
         # save grid coordinates for training
@@ -153,10 +154,11 @@ class NeRFSystem(LightningModule):
         self.val_ssim(rgb_pred, rgb_gt)
         logs['ssim'] = self.val_ssim.compute()
         self.val_ssim.reset()
-        self.val_lpips(torch.clip(rgb_pred*2-1, -1, 1),
-                       torch.clip(rgb_gt*2-1, -1, 1))
-        logs['lpips'] = self.val_lpips.compute()
-        self.val_lpips.reset()
+        if hparams.eval_lpips:
+            self.val_lpips(torch.clip(rgb_pred*2-1, -1, 1),
+                           torch.clip(rgb_gt*2-1, -1, 1))
+            logs['lpips'] = self.val_lpips.compute()
+            self.val_lpips.reset()
 
         if not hparams.no_save_test: # save test image to disk
             idx = batch['idx']
@@ -170,16 +172,17 @@ class NeRFSystem(LightningModule):
 
     def validation_epoch_end(self, outputs):
         psnrs = torch.stack([x['psnr'] for x in outputs])
-        ssims = torch.stack([x['ssim'] for x in outputs])
-        lpipss = torch.stack([x['lpips'] for x in outputs])
-
         mean_psnr = all_gather_ddp_if_available(psnrs).mean()
-        mean_ssim = all_gather_ddp_if_available(ssims).mean()
-        mean_lpips = all_gather_ddp_if_available(lpipss).mean()
-
         self.log('test/psnr', mean_psnr, prog_bar=True)
+
+        ssims = torch.stack([x['ssim'] for x in outputs])
+        mean_ssim = all_gather_ddp_if_available(ssims).mean()
         self.log('test/ssim', mean_ssim)
-        self.log('test/lpips_vgg', mean_lpips)
+
+        if hparams.eval_lpips:
+            lpipss = torch.stack([x['lpips'] for x in outputs])
+            mean_lpips = all_gather_ddp_if_available(lpipss).mean()
+            self.log('test/lpips_vgg', mean_lpips)
 
 
 if __name__ == '__main__':
