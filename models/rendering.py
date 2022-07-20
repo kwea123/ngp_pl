@@ -25,7 +25,7 @@ def render(model, rays, **kwargs):
     rays_o, rays_d = rays[:, 0:3].contiguous(), rays[:, 3:6].contiguous()
     _, hits_t, _ = \
         RayAABBIntersector.apply(rays_o, rays_d, model.center, model.half_size, 1)
-    hits_t[(hits_t[:, 0, 0]>0)&
+    hits_t[(hits_t[:, 0, 0]>=0)&
            (hits_t[:, 0, 0]<NEAR_DISTANCE), 0, 0] = NEAR_DISTANCE
 
     if kwargs.get('test_time', False):
