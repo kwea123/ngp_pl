@@ -140,6 +140,7 @@ __global__ void raymarching_train_kernel(
     if (r >= rays_o.size(0)) return;
 
     const uint32_t grid_size3 = grid_size*grid_size*grid_size;
+    const float grid_size_inv = 1.0f/grid_size;
 
     const float ox = rays_o[r][0], oy = rays_o[r][1], oz = rays_o[r][2];
     const float dx = rays_d[r][0], dy = rays_d[r][1], dz = rays_d[r][2];
@@ -225,7 +226,6 @@ __global__ void raymarching_train_kernel(
             t += dt; samples++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            const float grid_size_inv = 1.0f/grid_size;
             const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
             const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
             const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
@@ -314,6 +314,7 @@ __global__ void raymarching_test_kernel(
 
     const size_t r = alive_indices[n]; // ray index
     const uint32_t grid_size3 = grid_size*grid_size*grid_size;
+    const float grid_size_inv = 1.0f/grid_size;
 
     const float ox = rays_o[r][0], oy = rays_o[r][1], oz = rays_o[r][2];
     const float dx = rays_d[r][0], dy = rays_d[r][1], dz = rays_d[r][2];
@@ -349,7 +350,6 @@ __global__ void raymarching_test_kernel(
             s++;
         } else { // skip until the next voxel
             // calculate the distance to the next voxel
-            const float grid_size_inv = 1.0f/grid_size;
             const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
             const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
             const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
