@@ -26,6 +26,7 @@ inline __device__ int mip_from_dt(float dt, int grid_size, int cascades) {
     return min(cascades-1, max(0, exponent));
 }
 
+// morton utils
 inline __host__ __device__ uint32_t __expand_bits(uint32_t v)
 {
     v = (v * 0x00010001u) & 0xFF0000FFu;
@@ -52,7 +53,6 @@ inline __host__ __device__ uint32_t __morton3D_invert(uint32_t x)
 	x = (x | (x >> 16)) & 0x0000ffff;
 	return x;
 }
-
 
 __global__ void morton3D_kernel(
     const torch::PackedTensorAccessor32<int, 2, torch::RestrictPtrTraits> coords,
@@ -83,7 +83,6 @@ torch::Tensor morton3D_cu(const torch::Tensor coords){
     return indices;
 }
 
-
 __global__ void morton3D_invert_kernel(
     const torch::PackedTensorAccessor32<int, 1, torch::RestrictPtrTraits> indices,
     torch::PackedTensorAccessor32<int, 2, torch::RestrictPtrTraits> coords
@@ -96,7 +95,6 @@ __global__ void morton3D_invert_kernel(
     coords[n][1] = __morton3D_invert(ind >> 1);
     coords[n][2] = __morton3D_invert(ind >> 2);
 }
-
 
 torch::Tensor morton3D_invert_cu(const torch::Tensor indices){
     int N = indices.size(0);
@@ -116,7 +114,49 @@ torch::Tensor morton3D_invert_cu(const torch::Tensor indices){
     return coords;
 }
 
+// packbits utils
+template <typename scalar_t>
+__global__ void packbits_kernel(
+    const scalar_t* __restrict__ density_grid,
+    const int N,
+    const float density_threshold,
+    uint8_t* __restrict__ density_bitfield
+){
+    // parallel per byte
+    const int n = threadIdx.x + blockIdx.x * blockDim.x;
+    if (n >= N) return;
 
+    uint8_t bits = 0;
+
+    #pragma unroll 8
+    for (uint8_t i = 0; i < 8; i++) {
+        bits |= (density_grid[8*n+i]>density_threshold) ? ((uint8_t)1<<i) : 0;
+    }
+
+    density_bitfield[n] = bits;
+}
+
+void packbits_cu(
+    const torch::Tensor density_grid,
+    const float density_threshold,
+    torch::Tensor density_bitfield
+){
+    const int N = density_bitfield.size(0);
+
+    const int threads = 256, blocks = (N+threads-1)/threads;
+
+    AT_DISPATCH_FLOATING_TYPES_AND_HALF(density_grid.type(), "packbits_cu", 
+    ([&] {
+        packbits_kernel<scalar_t><<<blocks, threads>>>(
+            density_grid.data_ptr<scalar_t>(),
+            N,
+            density_threshold,
+            density_bitfield.data_ptr<uint8_t>()
+        );
+    }));
+}
+
+// ray marching utils
 // below code is based on https://github.com/ashawkey/torch-ngp/blob/main/raymarching/src/raymarching.cu
 __global__ void raymarching_train_kernel(
     const torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> rays_o,
