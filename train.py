@@ -116,7 +116,7 @@ class NeRFSystem(LightningModule):
 
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
-            self.model.update_density_grid(hparams.alpha_threshold*MAX_SAMPLES/3**0.5,
+            self.model.update_density_grid(0.01*MAX_SAMPLES/3**0.5,
                                            warmup=self.global_step<256)
 
         rays, rgb = batch['rays'], batch['rgb']
