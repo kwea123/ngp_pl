@@ -6,21 +6,28 @@
 
 inline __host__ __device__ float signf(const float x) { return copysignf(1.0f, x); }
 
-// exponentially step t if f>0 (larger step size when sample moves away from the camera)
-// default exp_step_factor is 0 for blender, 1/256 for real scene
-inline __host__ __device__ float calc_dt(
-    float t, float exp_step_factor, int max_samples, int grid_size, int cascades){
+// exponentially step t if exp_step_factor>0 (larger step size when sample moves away from the camera)
+// default exp_step_factor is 0 for synthetic scene, 1/256 for real scene
+inline __host__ __device__ float calc_dt(float t, float exp_step_factor, int max_samples, int grid_size, int cascades){
     return clamp(t*exp_step_factor,
                  SQRT3/max_samples,
                  SQRT3*scalbnf(1.0f, cascades-1)/grid_size);
 }
 
+// Example input range of |xyz| and return value of this function
+// [0, 0.5) -> 0
+// [0.5, 1) -> 1
+// [1, 2) -> 2
 inline __device__ int mip_from_pos(const float x, const float y, const float z, const int cascades) {
     const float mx = fmaxf(fabsf(x), fmaxf(fabs(y), fabs(z)));
     int exponent; frexpf(mx, &exponent);
     return min(cascades-1, max(0, exponent+1));
 }
 
+// Example input range of dt and return value of this function
+// [0, 1/grid_size) -> 0
+// [1/grid_size, 2/grid_size) -> 1
+// [2/grid_size, 4/grid_size) -> 2
 inline __device__ int mip_from_dt(float dt, int grid_size, int cascades) {
     int exponent; frexpf(dt*grid_size, &exponent);
     return min(cascades-1, max(0, exponent));
@@ -46,12 +53,12 @@ inline __host__ __device__ uint32_t __morton3D(uint32_t x, uint32_t y, uint32_t 
 
 inline __host__ __device__ uint32_t __morton3D_invert(uint32_t x)
 {
-	x = x & 0x49249249;
-	x = (x | (x >> 2)) & 0xc30c30c3;
-	x = (x | (x >> 4)) & 0x0f00f00f;
-	x = (x | (x >> 8)) & 0xff0000ff;
-	x = (x | (x >> 16)) & 0x0000ffff;
-	return x;
+    x = x & 0x49249249;
+    x = (x | (x >> 2)) & 0xc30c30c3;
+    x = (x | (x >> 4)) & 0x0f00f00f;
+    x = (x | (x >> 8)) & 0xff0000ff;
+    x = (x | (x >> 16)) & 0x0000ffff;
+    return x;
 }
 
 __global__ void morton3D_kernel(
@@ -217,14 +224,11 @@ __global__ void raymarching_train_kernel(
         if (occ) {
             t += dt; N_samples++;
         } else { // skip until the next voxel
-            // calculate the distance to the next voxel
-            const int res = grid_size>>mip;
-            const float px = x*res, py = y*res, pz = z*res;
-            const float tx = (floorf(px+0.5f*(1+signf(dx)))-px)*dx_inv;
-            const float ty = (floorf(py+0.5f*(1+signf(dy)))-py)*dy_inv;
-            const float tz = (floorf(pz+0.5f*(1+signf(dz)))-pz)*dz_inv;
+            const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
+            const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
+            const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
 
-            const float t_target = t+fmaxf(0.0f, fminf(tx, fminf(ty, tz))/res); // the t of the next voxel
+            const float t_target = t + fmaxf(0.0f, fminf(tx, fminf(ty, tz)));
             do {
                 t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
             } while (t < t_target);
@@ -265,7 +269,6 @@ __global__ void raymarching_train_kernel(
             ts[s] = t; deltas[s] = dt;
             t += dt; samples++;
         } else { // skip until the next voxel
-            // calculate the distance to the next voxel
             const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
             const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
             const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
@@ -389,7 +392,6 @@ __global__ void raymarching_test_kernel(
             hits_t[r][0] = t; // modify the starting point for the next marching
             s++;
         } else { // skip until the next voxel
-            // calculate the distance to the next voxel
             const float tx = (((nx+0.5f+0.5f*signf(dx))*grid_size_inv*2-1)*mip_bound-x)*dx_inv;
             const float ty = (((ny+0.5f+0.5f*signf(dy))*grid_size_inv*2-1)*mip_bound-y)*dy_inv;
             const float tz = (((nz+0.5f+0.5f*signf(dz))*grid_size_inv*2-1)*mip_bound-z)*dz_inv;
