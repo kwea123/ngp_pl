@@ -5,7 +5,8 @@ from einops import rearrange
 import vren
 
 MAX_SAMPLES = 1024
-NEAR_DISTANCE = 0.05
+NEAR_DISTANCE = 0.2
+INF_DISTANCE = 1e3
 
 
 def render(model, rays, **kwargs):
@@ -25,8 +26,7 @@ def render(model, rays, **kwargs):
     rays_o, rays_d = rays[:, 0:3].contiguous(), rays[:, 3:6].contiguous()
     _, hits_t, _ = \
         RayAABBIntersector.apply(rays_o, rays_d, model.center, model.half_size, 1)
-    hits_t[(hits_t[:, 0, 0]>=0)&
-           (hits_t[:, 0, 0]<NEAR_DISTANCE), 0, 0] = NEAR_DISTANCE
+    hits_t[(hits_t[:, 0, 0]>=0)&(hits_t[:, 0, 0]<NEAR_DISTANCE), 0, 0] = NEAR_DISTANCE
 
     if kwargs.get('test_time', False):
         render_func = __render_rays_test
@@ -52,11 +52,12 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
            When more rays are dead, we can increase the number of samples
            of each marching (the variable @N_samples)
     """
+    exp_step_factor = kwargs.get('exp_step_factor', 0.)
     results = {}
 
     # output tensors to be filled in
     N_rays = len(rays_o)
-    device =rays_o.device
+    device = rays_o.device
     opacity = torch.zeros(N_rays, device=device)
     depth = torch.zeros(N_rays, device=device)
     rgb = torch.zeros(N_rays, 3, device=device)
@@ -69,13 +70,16 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
         if N_alive==0: break
 
         # the number of samples to add on each ray
-        N_samples = max(min(N_rays//N_alive, 64), 1)
+        # if it's synthetic data, bg is majority so min_samples=1 effectively covers the bg
+        # otherwise, 4 is more efficient empirically
+        min_samples = 1 if exp_step_factor==0 else 4
+        N_samples = max(min(N_rays//N_alive, 64), min_samples)
         samples += N_samples
 
         xyzs, dirs, deltas, ts, N_eff_samples = \
             vren.raymarching_test(rays_o, rays_d, hits_t[:, 0], alive_indices,
                                   model.density_bitfield, model.cascades,
-                                  model.scale, kwargs.get('exp_step_factor', 0.),
+                                  model.scale, exp_step_factor,
                                   model.grid_size, MAX_SAMPLES, N_samples)
         xyzs = rearrange(xyzs, 'n1 n2 c -> (n1 n2) c')
         dirs = rearrange(dirs, 'n1 n2 c -> (n1 n2) c')
@@ -95,10 +99,13 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
             N_eff_samples, opacity, depth, rgb)
         alive_indices = alive_indices[alive_indices>=0] # remove converged rays
 
-    rgb_bg = torch.ones(3, device=device) # TODO: infer env map from network
     results['opacity'] = opacity
     results['depth'] = depth
-    results['rgb'] = rgb + rgb_bg*rearrange(1-opacity, 'n -> n 1')
+    results['rgb'] = rgb
+
+    if exp_step_factor==0: # synthetic
+        rgb_bg = torch.ones(3, device=device)
+        results['rgb'] += rgb_bg*rearrange(1-opacity, 'n -> n 1')
 
     return results
 
@@ -115,21 +122,24 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     3. Use volume rendering to combine the result (front to back compositing
        and early stop the ray if its transmittance is below a threshold)
     """
+    exp_step_factor = kwargs.get('exp_step_factor', 0.)
     results = {}
 
     rays_a, xyzs, dirs, deltas, ts = \
         RayMarcher.apply(
             rays_o, rays_d, hits_t[:, 0], model.density_bitfield,
             model.cascades, model.scale,
-            kwargs.get('exp_step_factor', 0.), model.grid_size, MAX_SAMPLES)
+            exp_step_factor, model.grid_size, MAX_SAMPLES)
 
     sigmas, rgbs = model(xyzs, dirs)
 
-    rgb_bg = torch.ones(3, device=rays_o.device) # TODO: infer env map from network
-    results['opacity'], results['depth'], rgb = \
+    results['opacity'], results['depth'], results['depth_sq'], results['rgb'] = \
         VolumeRenderer.apply(sigmas, rgbs.contiguous(), deltas, ts,
                              rays_a, kwargs.get('T_threshold', 1e-4))
 
-    results['rgb'] = rgb + rgb_bg*rearrange(1-results['opacity'], 'n -> n 1')
+    if exp_step_factor==0: # synthetic
+        rgb_bg = torch.ones(3, device=rays_o.device)
+        results['rgb'] = results['rgb'] + \
+                         rgb_bg*rearrange(1-results['opacity'], 'n -> n 1')
 
     return results
