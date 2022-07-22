@@ -27,6 +27,8 @@ class BaseDataset(Dataset):
             sample = {'rays': self.rays[idxs, :6],
                       'rgb': self.rays[idxs, 6:9],
                       'idxs': idxs}
+            if self.rays.shape[1]>=10:
+                sample['disp'] = self.rays[idxs, 9]
         else:
             sample = {'rays': self.rays[idx][:, :6],
                       'rgb': self.rays[idx][:, 6:9],
