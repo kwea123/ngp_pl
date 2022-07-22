@@ -37,11 +37,25 @@ This implementation has **strict** requirements due to dependencies on other lib
 
 # :books: Data preparation
 
+1.  Synthetic data
+
 Download preprocessed datasets from [NSVF](https://github.com/facebookresearch/NSVF#dataset). **Do not change the folder names** since there is some hard-coded fix in my dataloader.
+
+2.  Custom data
+
+Please run `colmap` and get a folder `sparse/0` under which there are `cameras.bin`, `images.bin` and `points3D.bin`. [nerf_llff_data](https://drive.google.com/file/d/16VnMcF1KJYxN9QId6TClMsZRahHNMW5g/view?usp=sharing) is also supported.
 
 # :key: Training
 
-Quickstart: `python train.py --root_dir <path/to/lego> --exp_name Lego`
+Quickstart:
+
+1.  Synthetic data
+
+`python train.py --root_dir <path/to/lego> --exp_name Lego`
+
+2.  Custom data
+
+`python train.py --root_dir <path/to/fern> --dataset_name colmap --exp_name fern --scale 2.0 --downsample 0.25`
 
 It will train the lego scene for 30k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
 
@@ -140,5 +154,4 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 # TODO
 
-- [ ] support custom dataset
 - [ ] GUI
