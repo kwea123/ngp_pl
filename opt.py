@@ -31,7 +31,7 @@ def get_opts():
     parser.add_argument('--no_save_test', action='store_true', default=False,
                         help='whether to save test image and video')
 
-    parser.add_argument('--lr', type=float, default=3e-3,
+    parser.add_argument('--lr', type=float, default=1e-2,
                         help='learning rate')
 
     parser.add_argument('--exp_name', type=str, default='exp',
