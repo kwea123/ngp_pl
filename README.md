@@ -85,6 +85,9 @@ As for speed, mine is faster than torch-ngp, but is still only half fast as inst
   <img src="https://user-images.githubusercontent.com/11364490/176800109-38eb35f3-e145-4a09-8304-1795e3a4e8cd.png", width="45%">
   <img src="https://user-images.githubusercontent.com/11364490/176800106-fead794f-7e70-4459-b99e-82725fe6777e.png", width="45%">
   <br>
+  <img src="https://user-images.githubusercontent.com/11364490/180444355-444676cf-2af2-49ad-9fe2-16eb1e6c4ef1.png", width="45%">
+  <img src="https://user-images.githubusercontent.com/11364490/180444337-3df9f245-f7eb-453f-902b-0cb9dae60144.png", width="45%">
+  <br>
   <sup>Left: torch-ngp. Right: mine.</sup>
 </p>
 
