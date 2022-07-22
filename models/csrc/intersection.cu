@@ -100,7 +100,6 @@ std::vector<torch::Tensor> ray_aabb_intersect_cu(
 }
 
 
-// TODO: correct this to ray_d unnormalized!!!!!!!!
 __device__ __forceinline__ float2 _ray_sphere_intersect(
     const float3 ray_o,
     const float3 ray_d,
@@ -109,15 +108,16 @@ __device__ __forceinline__ float2 _ray_sphere_intersect(
 ){
     const float3 co = ray_o-center;
 
+    const float a = dot(ray_d, ray_d);
     const float half_b = dot(ray_d, co);
     const float c = dot(co, co)-radius*radius;
 
-    const float discriminant = half_b*half_b-c;
+    const float discriminant = half_b*half_b-a*c;
 
     if (discriminant < 0) return make_float2(-1.0f); // no intersection
 
     const float disc_sqrt = sqrtf(discriminant);
-    return make_float2(-half_b-disc_sqrt, -half_b+disc_sqrt);
+    return make_float2(-half_b-disc_sqrt, -half_b+disc_sqrt)/a;
 }
 
 
