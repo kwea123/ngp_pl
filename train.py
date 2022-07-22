@@ -117,15 +117,15 @@ class NeRFSystem(LightningModule):
     def training_step(self, batch, batch_nb):
         if self.global_step%self.S == 0:
             self.model.update_density_grid(0.01*MAX_SAMPLES/3**0.5,
-                                           warmup=self.global_step<256)
+                                           warmup=self.global_step<256,
+                                           erode=hparams.dataset_name!='nsvf')
 
-        rays, rgb = batch['rays'], batch['rgb']
-        results = self(rays, split='train')
-        loss_d = self.loss(results, rgb)
+        results = self(batch['rays'], split='train')
+        loss_d = self.loss(results, batch)
         loss = sum(lo.mean() for lo in loss_d.values())
 
         with torch.no_grad():
-            self.train_psnr(results['rgb'], rgb)
+            self.train_psnr(results['rgb'], batch['rgb'])
         self.log('lr', self.opt.param_groups[0]['lr'])
         self.log('train/loss', loss)
         self.log('train/psnr', self.train_psnr, prog_bar=True)
@@ -139,8 +139,8 @@ class NeRFSystem(LightningModule):
             os.makedirs(self.val_dir, exist_ok=True)
 
     def validation_step(self, batch, batch_nb):
-        rays, rgb_gt = batch['rays'], batch['rgb']
-        results = self(rays, split='test')
+        rgb_gt = batch['rgb']
+        results = self(batch['rays'], split='test')
 
         logs = {}
         # compute each metric per image
