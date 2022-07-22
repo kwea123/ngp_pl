@@ -8,10 +8,8 @@ inline __host__ __device__ float signf(const float x) { return copysignf(1.0f, x
 
 // exponentially step t if exp_step_factor>0 (larger step size when sample moves away from the camera)
 // default exp_step_factor is 0 for synthetic scene, 1/256 for real scene
-inline __host__ __device__ float calc_dt(float t, float exp_step_factor, int max_samples, int grid_size, int cascades){
-    return clamp(t*exp_step_factor,
-                 SQRT3/max_samples,
-                 SQRT3*scalbnf(1.0f, cascades-1)/grid_size);
+inline __host__ __device__ float calc_dt(float t, float exp_step_factor, int max_samples, int grid_size, float scale){
+    return clamp(t*exp_step_factor, SQRT3/max_samples, SQRT3*2*scale/grid_size);
 }
 
 // Example input range of |xyz| and return value of this function
@@ -70,7 +68,6 @@ __global__ void morton3D_kernel(
 
     indices[n] = __morton3D(coords[n][0], coords[n][1], coords[n][2]);
 }
-
 
 torch::Tensor morton3D_cu(const torch::Tensor coords){
     int N = coords.size(0);
@@ -163,6 +160,7 @@ void packbits_cu(
     }));
 }
 
+
 // ray marching utils
 // below code is based on https://github.com/ashawkey/torch-ngp/blob/main/raymarching/src/raymarching.cu
 __global__ void raymarching_train_kernel(
@@ -195,7 +193,7 @@ __global__ void raymarching_train_kernel(
     float t1 = hits_t[r][0], t2 = hits_t[r][1];
 
     if (t1>=0) { // only perturb the starting t
-        const float dt = calc_dt(t1, exp_step_factor, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t1, exp_step_factor, max_samples, grid_size, scale);
         t1 += dt*noise[r];
     }
 
@@ -206,7 +204,7 @@ __global__ void raymarching_train_kernel(
     while (0<=t && t<t2 && N_samples<max_samples){
         const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
-        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, scale);
         const int mip = max(mip_from_pos(x, y, z, cascades),
                             mip_from_dt(dt, grid_size, cascades));
 
@@ -230,7 +228,7 @@ __global__ void raymarching_train_kernel(
 
             const float t_target = t + fmaxf(0.0f, fminf(tx, fminf(ty, tz)));
             do {
-                t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
+                t += calc_dt(t, exp_step_factor, max_samples, grid_size, scale);
             } while (t < t_target);
         }
     }
@@ -247,7 +245,7 @@ __global__ void raymarching_train_kernel(
     while (t<t2 && samples<N_samples){
         const float x = ox+t*dx, y = oy+t*dy, z = oz+t*dz;
 
-        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
+        const float dt = calc_dt(t, exp_step_factor, max_samples, grid_size, scale);
         const int mip = max(mip_from_pos(x, y, z, cascades),
                             mip_from_dt(dt, grid_size, cascades));
 
@@ -275,7 +273,7 @@ __global__ void raymarching_train_kernel(
 
             const float t_target = t + fmaxf(0.0f, fminf(tx, fminf(ty, tz)));
             do {
-                t += calc_dt(t, exp_step_factor, max_samples, grid_size, cascades);
+                t += calc_dt(t, exp_step_factor, max_samples, grid_size, scale);
             } while (t < t_target);
         }
     }
