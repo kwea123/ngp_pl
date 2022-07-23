@@ -93,7 +93,7 @@ As for speed, mine is faster than torch-ngp, but is still only half fast as inst
 
 More details are in the following section.
 
-# Benchmarks
+# :chart: Benchmarks
 
 To run benchmarks, use the scripts under `benchmarking`.
 
@@ -154,6 +154,11 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 </details>
 
+# :worried: Difficulties I meet now, call for help
+
+1.  The sampling quality is still not as good. The original code only needs 5 samples per ray (in average) to render, while mine needs 22
+
+2.  For custom inward 360 data, mine still doesn't train successfully.
 
 # TODO
 
