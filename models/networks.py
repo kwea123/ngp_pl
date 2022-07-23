@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
 import tinycudann as tcnn
 import vren
 from .custom_functions import TruncExp
@@ -27,9 +26,9 @@ class NGP(nn.Module):
             torch.zeros(self.cascades*self.grid_size**3//8, dtype=torch.uint8))
 
         # constants
-        L = 16; F_ = 2; log2_T = 19; N_min = 16
+        L = 16; F = 2; log2_T = 19; N_min = 16
         b = np.exp(np.log(2048*scale/N_min)/(L-1))
-        print(f'GridEncoding: Nmin={N_min} b={b:.5f} F={F_} T=2^{log2_T} L={L}')
+        print(f'GridEncoding: Nmin={N_min} b={b:.5f} F={F} T=2^{log2_T} L={L}')
 
         self.xyz_encoder = \
             tcnn.NetworkWithInputEncoding(
@@ -38,7 +37,7 @@ class NGP(nn.Module):
                 encoding_config={
                     "otype": "HashGrid",
                     "n_levels": L,
-                    "n_features_per_level": F_,
+                    "n_features_per_level": F,
                     "log2_hashmap_size": log2_T,
                     "base_resolution": N_min,
                     "per_level_scale": b,
@@ -208,10 +207,8 @@ class NGP(nn.Module):
             xyzs_w += (torch.rand_like(xyzs_w)*2-1) * half_grid_size
             density_grid_tmp[c, indices] = self.density(xyzs_w)
 
-        # My own implementation.
-        # decay more the cells that are visible to few cameras
-        # division by 0 is ok, the whole quantity is 0
         if erode:
+            # My own method. decay more the cells that are visible to few cameras
             decay = torch.clamp(decay**(1/self.count_grid), 0.1, 0.95)
         self.density_grid = \
             torch.where(self.density_grid<0,
