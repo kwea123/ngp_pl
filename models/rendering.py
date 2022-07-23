@@ -125,11 +125,12 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     exp_step_factor = kwargs.get('exp_step_factor', 0.)
     results = {}
 
-    rays_a, xyzs, dirs, deltas, ts = \
+    rays_a, xyzs, dirs, deltas, ts, total_samples = \
         RayMarcher.apply(
             rays_o, rays_d, hits_t[:, 0], model.density_bitfield,
             model.cascades, model.scale,
             exp_step_factor, model.grid_size, MAX_SAMPLES)
+    results['total_samples'] = total_samples
 
     sigmas, rgbs = model(xyzs, dirs)
 

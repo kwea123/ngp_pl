@@ -128,6 +128,8 @@ class NeRFSystem(LightningModule):
             self.train_psnr(results['rgb'], batch['rgb'])
         self.log('lr', self.opt.param_groups[0]['lr'])
         self.log('train/loss', loss)
+        self.log('train/s_per_ray',
+                 results['total_samples']/len(batch['rays']), prog_bar=True)
         self.log('train/psnr', self.train_psnr, prog_bar=True)
 
         return loss
@@ -184,6 +186,11 @@ class NeRFSystem(LightningModule):
             mean_lpips = all_gather_ddp_if_available(lpipss).mean()
             self.log('test/lpips_vgg', mean_lpips)
 
+    def get_progress_bar_dict(self):
+        # don't show the version number
+        items = super().get_progress_bar_dict()
+        items.pop("v_num", None)
+        return items
 
 if __name__ == '__main__':
     hparams = get_opts()
