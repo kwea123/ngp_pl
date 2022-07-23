@@ -160,8 +160,10 @@ class NGP(nn.Module):
             img_wh: image width and height
             chunk: the chunk size to split the cells (to avoid OOM)
         """
-        w2c_R = poses[:, :3, :3].mT # (N, 3, 3) batch transpose
-        w2c_T = -w2c_R@poses[:, :3, 3:] # (N, 3, 1)
+        N_cams = poses.shape[0]
+        self.count_grid = torch.zeros_like(self.density_grid)
+        w2c_R = poses[:, :3, :3].mT # (N_cams, 3, 3) batch transpose
+        w2c_T = -w2c_R@poses[:, :3, 3:] # (N_cams, 3, 1)
         cells = self.get_all_cells()
         for c in range(self.cascades):
             indices, coords = cells[c]
@@ -170,20 +172,22 @@ class NGP(nn.Module):
                 s = min(2**(c-1), self.scale)
                 half_grid_size = s/self.grid_size
                 xyzs_w = (xyzs*(s-half_grid_size)).T # (3, chunk)
-                xyzs_c = w2c_R @ xyzs_w + w2c_T # (N, 3, chunk)
-                uvd = K @ xyzs_c # (N, 3, chunk)
-                uv = uvd[:, :2]/uvd[:, 2:] # (N, 2, chunk)
+                xyzs_c = w2c_R @ xyzs_w + w2c_T # (N_cams, 3, chunk)
+                uvd = K @ xyzs_c # (N_cams, 3, chunk)
+                uv = uvd[:, :2]/uvd[:, 2:] # (N_cams, 2, chunk)
                 in_image = (uvd[:, 2]>=0)& \
                            (uv[:, 0]>=0)&(uv[:, 0]<img_wh[0])& \
                            (uv[:, 1]>=0)&(uv[:, 1]<img_wh[1])
-                covered_by_cam = (uvd[:, 2]>=NEAR_DISTANCE)&in_image # (N, chunk)
+                covered_by_cam = (uvd[:, 2]>=NEAR_DISTANCE)&in_image # (N_cams, chunk)
                 # if the cell is visible by at least one camera
-                covered_by_any_cam = covered_by_cam.any(0)
+                self.count_grid[c, indices[i:i+chunk]] = \
+                    count = covered_by_cam.sum(0)/N_cams
+
                 too_near_to_cam = (uvd[:, 2]<NEAR_DISTANCE)&in_image # (N, chunk)
                 # if the cell is too close (in front) to any camera
                 too_near_to_any_cam = too_near_to_cam.any(0)
                 # a valid cell should be visible by at least one camera and not too close to any camera
-                valid_mask = covered_by_any_cam&(~too_near_to_any_cam)
+                valid_mask = (count>0)&(~too_near_to_any_cam)
                 self.density_grid[c, indices[i:i+chunk]] = \
                     torch.where(valid_mask, 0., -1.)
 
@@ -204,20 +208,15 @@ class NGP(nn.Module):
             xyzs_w += (torch.rand_like(xyzs_w)*2-1) * half_grid_size
             density_grid_tmp[c, indices] = self.density(xyzs_w)
 
+        # My own implementation.
+        # decay more the cells that are visible to few cameras
+        # division by 0 is ok, the whole quantity is 0
+        if erode:
+            decay = torch.clamp(decay**(1/self.count_grid), 0.1, 0.95)
         self.density_grid = \
             torch.where(self.density_grid<0,
                         self.density_grid,
                         torch.maximum(self.density_grid*decay, density_grid_tmp))
-
-        # My own implementation. To avoid floaters, I compare the density
-        # with its neighbors (3x3x3). If it is the max among them, it is possible
-        # (not always) that it is a floater in empty space, so decay the density more.
-        if erode:
-            grid = self.density_grid.view(
-                self.cascades, self.grid_size, self.grid_size, self.grid_size)
-            maxpool = F.max_pool3d(grid, kernel_size=3, stride=1, padding=1)
-            local_max = (grid==maxpool)&(maxpool>0)
-            self.density_grid[local_max.view(self.cascades, -1)] *= decay
 
         mean_density = self.density_grid[self.density_grid>0].mean().item()
 
