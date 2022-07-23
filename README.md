@@ -43,7 +43,7 @@ Download preprocessed datasets from [NSVF](https://github.com/facebookresearch/N
 
 2.  Custom data
 
-Please run `colmap` and get a folder `sparse/0` under which there are `cameras.bin`, `images.bin` and `points3D.bin`. [nerf_llff_data](https://drive.google.com/file/d/16VnMcF1KJYxN9QId6TClMsZRahHNMW5g/view?usp=sharing) is also supported.
+Please run `colmap` and get a folder `sparse/0` under which there are `cameras.bin`, `images.bin` and `points3D.bin`. [nerf_llff_data](https://drive.google.com/file/d/16VnMcF1KJYxN9QId6TClMsZRahHNMW5g/view?usp=sharing) [mipnerf360 data](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip) also supported.
 
 # :key: Training
 
@@ -57,7 +57,7 @@ Quickstart:
 
 `python train.py --root_dir <path/to/fern> --dataset_name colmap --exp_name fern --scale 2.0 --downsample 0.25`
 
-It will train the lego scene for 30k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
+It will train the scene for 30k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
 
 If your GPU has larger memory, you can try increasing `batch_size` (and `lr`) and reducing `num_epochs` (e.g. `--batch_size 16384 --lr 2e-2 --num_epochs 20`). In my experiments, this further reduces the training time by 10~25s while maintaining the same quality.
 
