@@ -2,6 +2,8 @@
 
 ### Advertisement: stay tuned with [my channel](https://www.youtube.com/channel/UC7UlsMUu_gIgpqNGB4SqSwQ), I will upload cuda tutorials recently, and do a stream about this implementation!
 
+### Update 2022 July 24th: Training on custom data is possible now! (warning: some scenes still fail, I am researching the reason)
+
 ### Update 2022 July 14th: Multi-GPU training is available now! With multiple GPUs, now you can achieve high quality under a minute!
 
 Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). This repo aims at providing a concise pytorch interface to facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
@@ -9,6 +11,8 @@ Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high q
 https://user-images.githubusercontent.com/11364490/177025079-cb92a399-2600-4e10-94e0-7cbe09f32a6f.mp4
 
 https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-8e7a-5613b505e54a.mp4
+
+https://user-images.githubusercontent.com/11364490/180640362-9e63da7c-4268-43ce-874a-3219c7bd778c.mp4
 
 *  [Official CUDA implementation](https://github.com/NVlabs/instant-ngp/tree/master)
 *  [torch-ngp](https://github.com/ashawkey/torch-ngp) another pytorch implementation that I highly referenced.
@@ -158,7 +162,7 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 1.  The sampling quality is still not as good. The original code only needs 5 samples per ray (in average) to render, while mine needs 22
 
-2.  For custom inward 360 data, mine still doesn't train successfully.
+2.  For custom inward 360 data, mine still doesn't train successfully on some scenes. Original code also not always work. Why?
 
 # TODO
 
