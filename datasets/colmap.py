@@ -14,79 +14,6 @@ from .colmap_utils import \
 from .base import BaseDataset
 
 
-def normalize(v):
-    """Normalize a vector."""
-    return v/np.linalg.norm(v)
-
-
-def average_poses(poses, pts3d):
-    """
-    Calculate the average pose, which is then used to center all poses
-    using @center_poses. Its computation is as follows:
-    1. Compute the center: the average of 3d point cloud.
-    2. Compute the z axis: the normalized average z axis.
-    3. Compute axis y': the average y axis.
-    4. Compute x' = y' cross product z, then normalize it as the x axis.
-    5. Compute the y axis: z cross product x.
-    
-    Note that at step 3, we cannot directly use y' as y axis since it's
-    not necessarily orthogonal to z axis. We need to pass from x to y.
-    Inputs:
-        poses: (N_images, 3, 4)
-        pts3d: (N, 3)
-
-    Outputs:
-        pose_avg: (3, 4) the average pose
-    """
-    # 1. Compute the center
-    center = pts3d.mean(0)
-
-    # 2. Compute the z axis
-    z = normalize(poses[..., 2].mean(0)) # (3)
-
-    # 3. Compute axis y' (no need to normalize as it's not the final output)
-    y_ = poses[..., 1].mean(0) # (3)
-
-    # 4. Compute the x axis
-    x = normalize(np.cross(y_, z)) # (3)
-
-    # 5. Compute the y axis (as z and x are normalized, y is already of norm 1)
-    y = np.cross(z, x) # (3)
-
-    pose_avg = np.stack([x, y, z, center], 1) # (3, 4)
-
-    return pose_avg
-
-
-def center_poses(poses, pts3d):
-    """
-    See https://github.com/bmild/nerf/issues/34
-    Inputs:
-        poses: (N_images, 3, 4)
-        pts3d: (N, 3) reconstructed point cloud
-
-    Outputs:
-        poses_centered: (N_images, 3, 4) the centered poses
-        pts3d_centered: (N, 3) centered point cloud
-    """
-
-    pose_avg = average_poses(poses, pts3d) # (3, 4)
-    pose_avg_homo = np.eye(4)
-    pose_avg_homo[:3] = pose_avg # convert to homogeneous coordinate for faster computation
-                                 # by simply adding 0, 0, 0, 1 as the last row
-    pose_avg_inv = np.linalg.inv(pose_avg_homo)
-    last_row = np.tile(np.array([0, 0, 0, 1]), (len(poses), 1, 1)) # (N_images, 1, 4)
-    poses_homo = \
-        np.concatenate([poses, last_row], 1) # (N_images, 4, 4) homogeneous coordinate
-
-    poses_centered = pose_avg_inv @ poses_homo # (N_images, 4, 4)
-    poses_centered = poses_centered[:, :3] # (N_images, 3, 4)
-
-    pts3d_centered = pts3d @ pose_avg_inv[:, :3].T + pose_avg_inv[:, 3:].T
-
-    return poses_centered, pts3d_centered
-
-
 class ColmapDataset(BaseDataset):
     def __init__(self, root_dir, split='train', downsample=1.0, **kwargs):
         super().__init__(root_dir, split, downsample)
@@ -140,6 +67,16 @@ class ColmapDataset(BaseDataset):
         self.poses[..., 3] /= scale
         self.pts3d /= scale
 
+        # use precomputed test poses
+        rays = {} # {frame_idx: ray tensor}
+        if split == 'test_traj':
+            self.poses = create_spheric_poses(1.2, self.poses[:, 1, 3].mean())
+            for idx, pose in enumerate(self.poses):
+                rays_o, rays_d = get_rays(directions, torch.cuda.FloatTensor(pose))
+
+                rays[idx] = torch.cat([rays_o, rays_d], 1).cpu() # (h*w, 6)
+            return rays
+
         # use every 8th image as test set
         if split=='train':
             img_paths = [x for i, x in enumerate(img_paths) if i%8!=0]
@@ -149,7 +86,6 @@ class ColmapDataset(BaseDataset):
             self.poses = np.array([x for i, x in enumerate(self.poses) if i%8==0])
 
         print(f'Loading {len(img_paths)} {split} images ...')
-        rays = {} # {frame_idx: ray tensor}
         for idx, pose in enumerate(tqdm(self.poses)):
             rays_o, rays_d = \
                 get_rays(directions, torch.cuda.FloatTensor(pose))
