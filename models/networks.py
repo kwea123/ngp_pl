@@ -208,7 +208,7 @@ class NGP(nn.Module):
             density_grid_tmp[c, indices] = self.density(xyzs_w)
 
         if erode:
-            # My own method. decay more the cells that are visible to few cameras
+            # My own logic. decay more the cells that are visible to few cameras
             decay = torch.clamp(decay**(1/self.count_grid), 0.1, 0.95)
         self.density_grid = \
             torch.where(self.density_grid<0,
