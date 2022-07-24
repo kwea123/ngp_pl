@@ -224,7 +224,13 @@ if __name__ == '__main__':
 
     trainer.fit(system, ckpt_path=hparams.ckpt_path)
 
-    if (not hparams.no_save_test) and hparams.dataset_name=='nsvf': # save video
+    if not hparams.val_only: # save slimmed ckpt for the last epoch
+        ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')
+        torch.save(ckpt_, f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
+
+    if (not hparams.no_save_test) and \
+       hparams.dataset_name=='nsvf' and \
+       'Synthetic' in hparams.root_dir: # save video
         imgs = sorted(glob.glob(os.path.join(system.val_dir, '*.png')))
         imageio.mimsave(os.path.join(system.val_dir, 'rgb.mp4'),
                         [imageio.imread(img) for img in imgs[::2]],
@@ -232,7 +238,3 @@ if __name__ == '__main__':
         imageio.mimsave(os.path.join(system.val_dir, 'depth.mp4'),
                         [imageio.imread(img) for img in imgs[1::2]],
                         fps=30, macro_block_size=1)
-
-    if not hparams.val_only: # save slimmed ckpt for the last epoch
-        ckpt_ = slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt')
-        torch.save(ckpt_, f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
