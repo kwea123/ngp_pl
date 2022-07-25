@@ -164,9 +164,7 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 # :worried: Difficulties I meet now, call for help
 
-1.  The sampling quality is still not as good. The original code only needs 5 samples per ray (in average) to render, while mine needs 22
-
-2.  For custom inward 360 data, mine still doesn't train successfully on some scenes. Original code also not always work. Why?
+1.  For custom inward 360 data, mine still doesn't train successfully on some scenes. Original code also not always work. Why?
 
 # TODO
 
