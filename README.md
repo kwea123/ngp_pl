@@ -8,14 +8,18 @@
 
 Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). This repo aims at providing a concise pytorch interface to facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
 
+*  [Official CUDA implementation](https://github.com/NVlabs/instant-ngp/tree/master)
+*  [torch-ngp](https://github.com/ashawkey/torch-ngp) another pytorch implementation that I highly referenced.
+
+# :paintbrush: Gallery
+
 https://user-images.githubusercontent.com/11364490/177025079-cb92a399-2600-4e10-94e0-7cbe09f32a6f.mp4
 
 https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-8e7a-5613b505e54a.mp4
 
 https://user-images.githubusercontent.com/11364490/180640362-9e63da7c-4268-43ce-874a-3219c7bd778c.mp4
 
-*  [Official CUDA implementation](https://github.com/NVlabs/instant-ngp/tree/master)
-*  [torch-ngp](https://github.com/ashawkey/torch-ngp) another pytorch implementation that I highly referenced.
+https://user-images.githubusercontent.com/11364490/180698332-f2303dc3-2e38-49f3-8591-9d3f4e8b314a.mp4
 
 # :computer: Installation
 
