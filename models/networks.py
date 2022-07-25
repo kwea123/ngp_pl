@@ -35,12 +35,14 @@ class NGP(nn.Module):
                 n_input_dims=3,
                 n_output_dims=16,
                 encoding_config={
-                    "otype": "HashGrid",
+                    "otype": "Grid",
+	                "type": "Hash",
                     "n_levels": L,
                     "n_features_per_level": F,
                     "log2_hashmap_size": log2_T,
                     "base_resolution": N_min,
                     "per_level_scale": b,
+                    "interpolation": "Linear"
                 },
                 network_config={
                     "otype": "FullyFusedMLP",
@@ -122,9 +124,10 @@ class NGP(nn.Module):
         return cells
 
     @torch.no_grad()
-    def sample_uniform_and_occupied_cells(self, M):
+    def sample_uniform_and_occupied_cells(self, M, density_threshold):
         """
         Sample both M uniform and occupied cells (per cascade)
+        occupied cells are sample from cells with density > @density_threshold
         
         Outputs:
             cells: list (of length self.cascades) of indices and coords
@@ -137,7 +140,7 @@ class NGP(nn.Module):
                                     device=self.density_grid.device)
             indices1 = vren.morton3D(coords1).long()
             # occupied cells
-            indices2 = torch.nonzero(self.density_grid[c]>0)[:, 0]
+            indices2 = torch.nonzero(self.density_grid[c]>density_threshold)[:, 0]
             rand_idx = torch.randint(len(indices2), (M,),
                                      device=self.density_grid.device)
             indices2 = indices2[rand_idx]
@@ -196,7 +199,8 @@ class NGP(nn.Module):
         if warmup: # during the first steps
             cells = self.get_all_cells()
         else:
-            cells = self.sample_uniform_and_occupied_cells(self.grid_size**3//4)
+            cells = self.sample_uniform_and_occupied_cells(self.grid_size**3//4,
+                                                           density_threshold)
         # infer sigmas
         for c in range(self.cascades):
             indices, coords = cells[c]

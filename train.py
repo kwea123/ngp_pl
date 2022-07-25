@@ -121,7 +121,7 @@ class NeRFSystem(LightningModule):
                                            erode=hparams.dataset_name!='nsvf')
 
         results = self(batch['rays'], split='train')
-        loss_d = self.loss(results, batch)
+        loss_d = self.loss(results, batch, **{'step': self.global_step})
         loss = sum(lo.mean() for lo in loss_d.values())
 
         with torch.no_grad():
