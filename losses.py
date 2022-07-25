@@ -27,7 +27,6 @@ class NeRFLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.lambda_geo = 1e-4
         self.lambda_opa = 1e-3
 
     def forward(self, results, target, **kwargs):
@@ -37,9 +36,5 @@ class NeRFLoss(nn.Module):
         o = results['opacity']+1e-10
         # encourage opacity to be either 0 or 1 to avoid floater
         d['opacity'] = self.lambda_opa*(-o*torch.log(o))
-
-        if 'disp' in target:
-            d['depth'] = self.lambda_geo * \
-                shiftscale_inv_depthloss(1/(results['depth']+1e-10), target['disp'])
 
         return d
