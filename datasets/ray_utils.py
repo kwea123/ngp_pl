@@ -164,7 +164,7 @@ def create_spheric_poses(radius, mean_h, n_poses=120):
         ])
 
         c2w = rot_theta(theta) @ rot_phi(phi) @ trans_t(radius)
-        c2w = np.array([[1,0,0],[0,0,1],[0,1,0]]) @ c2w
+        c2w = np.array([[-1,0,0],[0,0,1],[0,1,0]]) @ c2w
         return c2w
 
     spheric_poses = []
