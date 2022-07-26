@@ -212,9 +212,9 @@ __global__ void raymarching_train_kernel(
         const float mip_bound_inv = 1/mip_bound;
 
         // round down to nearest grid position
-        const int nx = (int)(0.5f*(x*mip_bound_inv+1)*grid_size);
-        const int ny = (int)(0.5f*(y*mip_bound_inv+1)*grid_size);
-        const int nz = (int)(0.5f*(z*mip_bound_inv+1)*grid_size);
+        const int nx = clamp(0.5f*(x*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
+        const int ny = clamp(0.5f*(y*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
+        const int nz = clamp(0.5f*(z*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
 
         const uint32_t idx = mip*grid_size3 + __morton3D(nx, ny, nz);
         const bool occ = density_bitfield[idx/8] & (1<<(idx%8));
@@ -253,9 +253,9 @@ __global__ void raymarching_train_kernel(
         const float mip_bound_inv = 1/mip_bound;
 
         // round down to nearest grid position
-        const int nx = (int)(0.5f*(x*mip_bound_inv+1)*grid_size);
-        const int ny = (int)(0.5f*(y*mip_bound_inv+1)*grid_size);
-        const int nz = (int)(0.5f*(z*mip_bound_inv+1)*grid_size);
+        const int nx = clamp(0.5f*(x*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
+        const int ny = clamp(0.5f*(y*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
+        const int nz = clamp(0.5f*(z*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
 
         const uint32_t idx = mip*grid_size3 + __morton3D(nx, ny, nz);
         const bool occ = density_bitfield[idx/8] & (1<<(idx%8));
@@ -375,9 +375,9 @@ __global__ void raymarching_test_kernel(
         const float mip_bound_inv = 1/mip_bound;
 
         // round down to nearest grid position
-        const int nx = (int)(0.5f*(x*mip_bound_inv+1)*grid_size);
-        const int ny = (int)(0.5f*(y*mip_bound_inv+1)*grid_size);
-        const int nz = (int)(0.5f*(z*mip_bound_inv+1)*grid_size);
+        const int nx = clamp(0.5f*(x*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
+        const int ny = clamp(0.5f*(y*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
+        const int nz = clamp(0.5f*(z*mip_bound_inv+1)*grid_size, 0.0f, grid_size-1.0f);
 
         const uint32_t idx = mip*grid_size3 + __morton3D(nx, ny, nz);
         const bool occ = density_bitfield[idx/8] & (1<<(idx%8));
