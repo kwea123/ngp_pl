@@ -5,11 +5,10 @@ from einops import rearrange
 import vren
 
 MAX_SAMPLES = 1024
-NEAR_DISTANCE = 0.2
-INF_DISTANCE = 1e3
+NEAR_DISTANCE = 0.01
 
 
-def render(model, rays, **kwargs):
+def render(model, rays_o, rays_d, **kwargs):
     """
     Render rays by
     1. Compute the intersection of the rays with the scene bounding box
@@ -17,13 +16,13 @@ def render(model, rays, **kwargs):
 
     Inputs:
         model: NGP
-        rays: (N_rays, 3+3), ray origins and directions
+        rays_o: (N_rays, 3) ray origins
+        rays_d: (N_rays, 3) ray directions
 
     Outputs:
         result: dictionary containing final rgb and depth
     """
-
-    rays_o, rays_d = rays[:, 0:3].contiguous(), rays[:, 3:6].contiguous()
+    rays_o = rays_o.contiguous(); rays_d = rays_d.contiguous()
     _, hits_t, _ = \
         RayAABBIntersector.apply(rays_o, rays_d, model.center, model.half_size, 1)
     hits_t[(hits_t[:, 0, 0]>=0)&(hits_t[:, 0, 0]<NEAR_DISTANCE), 0, 0] = NEAR_DISTANCE
@@ -62,17 +61,17 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
     depth = torch.zeros(N_rays, device=device)
     rgb = torch.zeros(N_rays, 3, device=device)
 
-    samples = 0
+    samples = total_samples = 0
     alive_indices = torch.arange(N_rays, device=device)
+    # if it's synthetic data, bg is majority so min_samples=1 effectively covers the bg
+    # otherwise, 4 is more efficient empirically
+    min_samples = 1 if exp_step_factor==0 else 4
 
     while samples < MAX_SAMPLES:
         N_alive = len(alive_indices)
         if N_alive==0: break
 
         # the number of samples to add on each ray
-        # if it's synthetic data, bg is majority so min_samples=1 effectively covers the bg
-        # otherwise, 4 is more efficient empirically
-        min_samples = 1 if exp_step_factor==0 else 4
         N_samples = max(min(N_rays//N_alive, 64), min_samples)
         samples += N_samples
 
@@ -81,6 +80,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
                                   model.density_bitfield, model.cascades,
                                   model.scale, exp_step_factor,
                                   model.grid_size, MAX_SAMPLES, N_samples)
+        total_samples += N_eff_samples.sum()
         xyzs = rearrange(xyzs, 'n1 n2 c -> (n1 n2) c')
         dirs = rearrange(dirs, 'n1 n2 c -> (n1 n2) c')
         valid_mask = ~torch.all(dirs==0, dim=1)
@@ -102,6 +102,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
     results['opacity'] = opacity
     results['depth'] = depth
     results['rgb'] = rgb
+    results['total_samples'] = total_samples # total samples for all rays
 
     if exp_step_factor==0: # synthetic
         rgb_bg = torch.ones(3, device=device)
