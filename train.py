@@ -94,14 +94,14 @@ class NeRFSystem(LightningModule):
         self.register_buffer('directions', self.train_dataset.directions.to(self.device))
         self.register_buffer('poses', self.train_dataset.poses.to(self.device))
 
-        if hparams.optimize_ext: # pose is trainable
+        if hparams.optimize_ext:
             N = len(self.train_dataset.poses)
             self.register_parameter('dR',
                 nn.Parameter(torch.zeros(N, 3, dtype=torch.float32, device=self.device)))
             self.register_parameter('dT',
                 nn.Parameter(torch.zeros(N, 3, dtype=torch.float32, device=self.device)))
 
-        print('params', list(self.named_parameters()))
+        # print('params', list(self.named_parameters()))
         # TODO: use different learning rate for dR and dT
         self.opt = FusedAdam(self.parameters(), hparams.lr, eps=1e-15)
         self.sch = CosineAnnealingLR(self.opt,
