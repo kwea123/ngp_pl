@@ -175,7 +175,7 @@ __global__ void raymarching_train_kernel(
     const torch::PackedTensorAccessor32<float, 1, torch::RestrictPtrTraits> noise,
     const int max_samples,
     int* __restrict__ counter,
-    torch::PackedTensorAccessor32<int, 2, torch::RestrictPtrTraits> rays_a,
+    torch::PackedTensorAccessor64<int64_t, 2, torch::RestrictPtrTraits> rays_a,
     torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> xyzs,
     torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> dirs,
     torch::PackedTensorAccessor32<float, 1, torch::RestrictPtrTraits> deltas,
@@ -298,7 +298,7 @@ std::vector<torch::Tensor> raymarching_train_cu(
     auto counter = torch::zeros({2}, torch::dtype(torch::kInt32).device(rays_o.device()));
     // ray attributes: ray_idx, start_idx, N_samples
     auto rays_a = torch::zeros({N_rays, 3},
-                        torch::dtype(torch::kInt32).device(rays_o.device()));
+                        torch::dtype(torch::kLong).device(rays_o.device()));
     auto xyzs = torch::zeros({N_rays*max_samples, 3}, rays_o.options());
     auto dirs = torch::zeros({N_rays*max_samples, 3}, rays_o.options());
     auto deltas = torch::zeros({N_rays*max_samples}, rays_o.options());
@@ -320,7 +320,7 @@ std::vector<torch::Tensor> raymarching_train_cu(
             noise.packed_accessor32<float, 1, torch::RestrictPtrTraits>(),
             max_samples,
             counter.data_ptr<int>(),
-            rays_a.packed_accessor32<int, 2, torch::RestrictPtrTraits>(),
+            rays_a.packed_accessor64<int64_t, 2, torch::RestrictPtrTraits>(),
             xyzs.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
             dirs.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
             deltas.packed_accessor32<float, 1, torch::RestrictPtrTraits>(),
