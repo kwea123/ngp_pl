@@ -33,7 +33,7 @@ class BaseDataset(Dataset):
                       'pix_idxs': pix_idxs}
         else:
             sample = {'pose': self.poses[idx],
-                      'idx': idx}
+                      'img_idxs': idx}
             if len(self.rays)>0: # if ground truth rgb available
                 sample['rgb'] = self.rays[idx]
 

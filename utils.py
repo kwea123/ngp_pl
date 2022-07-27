@@ -17,6 +17,7 @@ def extract_model_state_dict(ckpt_path, model_name='model', prefixes_to_ignore=[
             checkpoint_[k] = v
     return checkpoint_
 
+
 def load_ckpt(model, ckpt_path, model_name='model', prefixes_to_ignore=[]):
     if not ckpt_path: return
     model_dict = model.state_dict()

@@ -11,7 +11,7 @@ from einops import rearrange
 # data
 from torch.utils.data import DataLoader
 from datasets import dataset_dict
-from datasets.ray_utils import get_rays
+from datasets.ray_utils import axisangle_to_R, get_rays
 
 # models
 from kornia.utils.grid import create_meshgrid3d
@@ -95,20 +95,29 @@ class NeRFSystem(LightningModule):
         self.register_buffer('poses', self.train_dataset.poses.to(self.device))
 
         if hparams.optimize_ext:
+            # only optimize translation for now
             N = len(self.train_dataset.poses)
-            self.register_parameter('dR',
-                nn.Parameter(torch.zeros(N, 3, dtype=torch.float32, device=self.device)))
+            # self.register_parameter('dR',
+            #     nn.Parameter(torch.zeros(N, 3, device=self.device)))
             self.register_parameter('dT',
-                nn.Parameter(torch.zeros(N, 3, dtype=torch.float32, device=self.device)))
+                nn.Parameter(torch.zeros(N, 3, device=self.device)))
 
-        # print('params', list(self.named_parameters()))
-        # TODO: use different learning rate for dR and dT
-        self.opt = FusedAdam(self.parameters(), hparams.lr, eps=1e-15)
-        self.sch = CosineAnnealingLR(self.opt,
-                                     hparams.num_epochs,
-                                     hparams.lr/30)
+        net_params = []
+        for n, p in self.named_parameters():
+            if n not in ['dR', 'dT']: net_params += [p]
+        
+        opts = []
+        self.net_opt = FusedAdam(net_params, hparams.lr, eps=1e-15)
+        opts += [self.net_opt]
+        if hparams.optimize_ext:
+            # pose_r_opt = FusedAdam([self.dR], 1e-6)
+            pose_t_opt = FusedAdam([self.dT], 1e-6)
+            opts += [pose_t_opt]
+        net_sch = CosineAnnealingLR(self.net_opt,
+                                    hparams.num_epochs,
+                                    hparams.lr/30)
 
-        return [self.opt], [self.sch]
+        return opts, [net_sch]
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
@@ -128,21 +137,27 @@ class NeRFSystem(LightningModule):
                                         self.poses,
                                         self.train_dataset.img_wh)
 
-    def training_step(self, batch, batch_nb):
+    def training_step(self, batch, batch_nb, *args):
         if self.global_step%self.S == 0:
             self.model.update_density_grid(0.01*MAX_SAMPLES/3**0.5,
                                            warmup=self.global_step<256,
                                            erode=hparams.dataset_name!='nsvf')
 
-        rays_o, rays_d = get_rays(self.directions[batch['pix_idxs']],
-                                  self.poses[batch['img_idxs']])
+        poses = self.poses[batch['img_idxs']] # (B, 3, 4)
+        if hparams.optimize_ext:
+            # dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
+            # poses[..., :3] = dR @ poses[..., :3]
+            dT = self.dT[batch['img_idxs']] # (B, 3)
+            poses[..., 3] += dT
+
+        rays_o, rays_d = get_rays(self.directions[batch['pix_idxs']], poses)
         results = self(rays_o, rays_d, split='train')
         loss_d = self.loss(results, batch)
         loss = sum(lo.mean() for lo in loss_d.values())
 
         with torch.no_grad():
             self.train_psnr(results['rgb'], batch['rgb'])
-        self.log('lr', self.opt.param_groups[0]['lr'])
+        self.log('lr', self.net_opt.param_groups[0]['lr'])
         self.log('train/loss', loss)
         self.log('train/s_per_ray',
                  results['total_samples']/len(rays_o), prog_bar=True)
@@ -158,6 +173,11 @@ class NeRFSystem(LightningModule):
 
     def validation_step(self, batch, batch_nb):
         rgb_gt = batch['rgb']
+        if hparams.optimize_ext:
+            # dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
+            # poses[..., :3] = dR @ poses[..., :3]
+            dT = self.dT[batch['img_idxs']] # (3)
+            batch['pose'][..., 3] += dT
         rays_o, rays_d = get_rays(self.directions, batch['pose'])
         results = self(rays_o, rays_d, split='test')
 
@@ -180,7 +200,7 @@ class NeRFSystem(LightningModule):
             self.val_lpips.reset()
 
         if not hparams.no_save_test: # save test image to disk
-            idx = batch['idx']
+            idx = batch['img_idxs']
             rgb_pred = rearrange(results['rgb'].cpu().numpy(), '(h w) c -> h w c', h=h)
             rgb_pred = (rgb_pred*255).astype(np.uint8)
             depth = depth2img(rearrange(results['depth'].cpu().numpy(), '(h w) -> h w', h=h))

@@ -1,6 +1,8 @@
 import torch
 import vren
 from torch.cuda.amp import custom_fwd, custom_bwd
+from torch_scatter import segment_csr
+from einops import rearrange
 
 
 class RayAABBIntersector(torch.autograd.Function):
@@ -68,7 +70,6 @@ class RayMarcher(torch.autograd.Function):
 
     Outputs:
         rays_a: (N_rays) ray_idx, start_idx, N_samples
-        (the followings contain only valid samples, with some padding)
         xyzs: (N, 3) sample positions
         dirs: (N, 3) sample view directions
         deltas: (N) dt for integration
@@ -79,7 +80,6 @@ class RayMarcher(torch.autograd.Function):
     def forward(ctx, rays_o, rays_d, hits_t,
                 density_bitfield, cascades, scale, exp_step_factor,
                 grid_size, max_samples):
-
         # noise to perturb the first sample of each ray
         noise = torch.rand_like(rays_o[:, 0])
 
@@ -96,7 +96,21 @@ class RayMarcher(torch.autograd.Function):
         deltas = deltas[:total_samples]
         ts = ts[:total_samples]
 
+        ctx.save_for_backward(rays_a, ts)
+
         return rays_a, xyzs, dirs, deltas, ts, total_samples
+
+    @staticmethod
+    @custom_bwd
+    def backward(ctx, dL_drays_a, dL_dxyzs, dL_ddirs,
+                 dL_ddeltas, dL_dts, dL_dtotal_samples):
+        rays_a, ts = ctx.saved_tensors
+        segments = torch.cat([rays_a[:, 1], rays_a[-1:, 1]+rays_a[-1:, 2]])
+        dL_drays_o = segment_csr(dL_dxyzs, segments)
+        dL_drays_d = \
+            segment_csr(dL_dxyzs*rearrange(ts, 'n -> n 1')+dL_ddirs, segments)
+
+        return dL_drays_o, dL_drays_d, None, None, None, None, None, None, None
 
 
 class VolumeRenderer(torch.autograd.Function):
