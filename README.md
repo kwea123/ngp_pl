@@ -37,6 +37,7 @@ This implementation has **strict** requirements due to dependencies on other lib
 * Python>=3.8 (installation via [anaconda](https://www.anaconda.com/distribution/) is recommended, use `conda create -n ngp_pl python=3.8` to create a conda environment and activate it by `conda activate ngp_pl`)
 * Python libraries
     * Install pytorch by `pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu113`
+    * Install `torch-scatter` following their [instruction](https://github.com/rusty1s/pytorch_scatter#installation)
     * Install `tinycudann` following their [instruction](https://github.com/NVlabs/tiny-cuda-nn#requirements) (compilation and pytorch extension)
     * Install `apex` following their [instruction](https://github.com/NVIDIA/apex#linux)
     * Install core requirements by `pip install -r requirements.txt`
