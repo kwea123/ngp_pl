@@ -1,13 +1,11 @@
 import torch
 import numpy as np
 import os
-import cv2
 from PIL import Image
 from einops import rearrange
 from tqdm import tqdm
 
 from .ray_utils import *
-from .depth_utils import read_pfm
 from .colmap_utils import \
     read_cameras_binary, read_images_binary, read_points3d_binary
 
@@ -73,8 +71,8 @@ class ColmapDataset(BaseDataset):
             self.poses = np.array([x for i, x in enumerate(self.poses) if i%8==0])
 
         print(f'Loading {len(img_paths)} {split} images ...')
-        for img_path in img_paths:
-            img = Image.open(img_path)
+        for img_path in tqdm(img_paths):
+            img = Image.open(img_path).convert('RGB')
             img = img.resize(self.img_wh, Image.LANCZOS)
             img = self.transform(img) # (c, h, w)
             img = rearrange(img, 'c h w -> (h w) c')
