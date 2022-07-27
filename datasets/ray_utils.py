@@ -1,8 +1,10 @@
 import torch
 import numpy as np
 from kornia import create_meshgrid
+from einops import rearrange
 
 
+@torch.cuda.amp.autocast(dtype=torch.float32)
 def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
     """
     Get ray directions for all pixels in camera coordinate [right down front].
@@ -19,7 +21,7 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
         directions: (H, W, 3) or (H*W, 3), the direction of the rays in camera coordinate
         uv: (H, W, 2) or (H*W, 2) image coordinates
     """
-    grid = create_meshgrid(H, W, False, device='cuda')[0] # (H, W, 2)
+    grid = create_meshgrid(H, W, False)[0] # (H, W, 2)
     u, v = grid.unbind(-1)
 
     fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
@@ -40,6 +42,7 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
     return directions
 
 
+@torch.cuda.amp.autocast(dtype=torch.float32)
 def get_rays(directions, c2w):
     """
     Get ray origin and directions in world coordinate for all pixels in one image.
@@ -47,17 +50,21 @@ def get_rays(directions, c2w):
                ray-tracing-generating-camera-rays/standard-coordinate-systems
 
     Inputs:
-        directions: (H*W, 3) precomputed ray directions in camera coordinate
-        c2w: (3, 4) transformation matrix from camera coordinate to world coordinate
+        directions: (N, 3) ray directions in camera coordinate
+        c2w: (3, 4) or (N, 3, 4) transformation matrix from camera coordinate to world coordinate
 
     Outputs:
-        rays_o: (H*W, 3), the origin of the rays in world coordinate
-        rays_d: (H*W, 3), the direction of the rays in world coordinate
+        rays_o: (N, 3), the origin of the rays in world coordinate
+        rays_d: (N, 3), the direction of the rays in world coordinate
     """
-    # Rotate ray directions from camera coordinate to the world coordinate
-    rays_d = directions @ c2w[:, :3].T # (H*W, 3)
+    if c2w.ndim==2:
+        # Rotate ray directions from camera coordinate to the world coordinate
+        rays_d = directions @ c2w[:, :3].T
+    else:
+        rays_d = rearrange(directions, 'n c -> n 1 c') @ c2w[..., :3].mT
+        rays_d = rearrange(rays_d, 'n 1 c -> n c')
     # The origin of all rays is the camera origin in world coordinate
-    rays_o = c2w[:, 3].expand(rays_d.shape) # (H*W, 3)
+    rays_o = c2w[..., 3].expand_as(rays_d)
 
     return rays_o, rays_d
 

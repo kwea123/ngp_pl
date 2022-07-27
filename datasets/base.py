@@ -19,19 +19,22 @@ class BaseDataset(Dataset):
     def __len__(self):
         if self.split.startswith('train'):
             return 1000
-        return len(self.rays)
+        return len(self.poses)
 
     def __getitem__(self, idx):
         if self.split.startswith('train'):
-            idxs = np.random.choice(len(self.rays), self.batch_size)
-            sample = {'rays': self.rays[idxs, :6],
-                      'rgb': self.rays[idxs, 6:9],
-                      'idxs': idxs}
-            if self.rays.shape[1]>=10:
-                sample['disp'] = self.rays[idxs, 9]
+            # training pose is retrieved in train.py
+            # randomly select images
+            img_idxs = np.random.choice(len(self.poses), self.batch_size)
+            # randomly select pixels
+            pix_idxs = np.random.choice(self.img_wh[0]*self.img_wh[1], self.batch_size)
+            sample = {'rgb': self.rays[img_idxs, pix_idxs],
+                      'img_idxs': img_idxs,
+                      'pix_idxs': pix_idxs}
         else:
-            sample = {'rays': self.rays[idx][:, :6],
-                      'rgb': self.rays[idx][:, 6:9],
+            sample = {'pose': self.poses[idx],
                       'idx': idx}
+            if len(self.rays)>0: # if ground truth rgb available
+                sample['rgb'] = self.rays[idx]
 
         return sample

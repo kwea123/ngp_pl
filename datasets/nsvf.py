@@ -6,7 +6,7 @@ from PIL import Image
 from einops import rearrange
 from tqdm import tqdm
 
-from .ray_utils import *
+from .ray_utils import get_ray_directions
 
 from .base import BaseDataset
 
@@ -43,23 +43,14 @@ class NSVFDataset(BaseDataset):
             elif 'Tanks' in root_dir:
                 w, h = int(1920*downsample), int(1080*downsample)
             self.K[:2] *= downsample
-
-        self.img_wh = (w, h)
+        self.K = torch.FloatTensor(self.K)
         self.directions = get_ray_directions(h, w, self.K)
+        self.img_wh = (w, h)
 
-        if split.startswith('train'):
-            rays_train = self.read_meta('train')
-            if split == 'trainval':
-                rays_val = self.read_meta('val')
-                self.rays = torch.cat(list(rays_train.values())+
-                                      list(rays_val.values()))
-            else:
-                self.rays = torch.cat(list(rays_train.values()))
-        else: # val, test
-            self.rays = self.read_meta(split)
+        self.read_meta(split)
 
     def read_meta(self, split):
-        rays = {} # {frame_idx: ray tensor}
+        self.rays = []
         self.poses = []
 
         if split == 'test_traj': # BlendedMVS and TanksAndTemple
@@ -70,44 +61,39 @@ class NSVFDataset(BaseDataset):
             else:
                 poses = np.loadtxt(os.path.join(self.root_dir, 'test_traj.txt'))
                 poses = poses.reshape(-1, 4, 4)
-            for idx, pose in enumerate(poses):
+            for pose in poses:
                 c2w = pose[:3]
                 c2w[:, 0] *= -1 # [left down front] to [right down front]
                 c2w[:, 3] -= self.shift
-                c2w[:, 3] /= self.scale # to bound the scene inside [-1, 1]
+                c2w[:, 3] /= 2*self.scale # to bound the scene inside [-0.5, 0.5]
                 self.poses += [c2w]
-                rays_o, rays_d = get_rays(self.directions, torch.cuda.FloatTensor(c2w))
-
-                rays[idx] = torch.cat([rays_o, rays_d], 1).cpu() # (h*w, 6)
         else:
             if split == 'train': prefix = '0_'
-            elif split == 'val': prefix = '1_'
+            elif split == 'trainval': prefix = '[0-1]_'
             elif 'Synthetic' in self.root_dir: prefix = '2_'
             elif split == 'test': prefix = '1_' # test set for real scenes
+            else: raise ValueError(f'{split} split not recognized!')
             imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
             poses = sorted(glob.glob(os.path.join(self.root_dir, 'pose', prefix+'*.txt')))
 
             print(f'Loading {len(imgs)} {split} images ...')
-            for idx, (img, pose) in enumerate(tqdm(zip(imgs, poses))):
+            for img, pose in tqdm(zip(imgs, poses)):
                 c2w = np.loadtxt(pose)[:3]
                 c2w[:, 3] -= self.shift
                 c2w[:, 3] /= 2*self.scale # to bound the scene inside [-0.5, 0.5]
                 self.poses += [c2w]
 
-                rays_o, rays_d = \
-                    get_rays(self.directions, torch.cuda.FloatTensor(c2w))
-
                 img = Image.open(img)
                 img = img.resize(self.img_wh, Image.LANCZOS)
-                img = self.transform(img).cuda() # (c, h, w)
+                img = self.transform(img) # (c, h, w)
                 img = rearrange(img, 'c h w -> (h w) c')
                 if 'Jade' in self.root_dir or 'Fountain' in self.root_dir:
                     # these scenes have black background, changing to white
                     img[torch.all(img<=0.1, dim=-1)] = 1.0
                 if img.shape[-1] == 4:
-                    img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
+                    img = img[:, :3]*img[:, -1:]+(1-img[:, -1:]) # blend A to RGB
 
-                rays[idx] = torch.cat([rays_o, rays_d, img], 1).cpu() # (h*w, 9)
-            self.poses = np.float32(self.poses)
+                self.rays += [img]
 
-        return rays
+            self.rays = torch.stack(self.rays) # (N_images, hw, ?)
+        self.poses = torch.FloatTensor(self.poses) # (N_images, 3, 4)

@@ -17,6 +17,9 @@ def get_opts():
     parser.add_argument('--scale', type=float, default=0.5,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
 
+    parser.add_argument('--optimize_ext', action='store_true', default=False,
+                        help='whether to optimize extrinsics (colmap only)')
+
     parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
     parser.add_argument('--num_epochs', type=int, default=30,

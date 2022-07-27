@@ -18,16 +18,7 @@ class ColmapDataset(BaseDataset):
     def __init__(self, root_dir, split='train', downsample=1.0, **kwargs):
         super().__init__(root_dir, split, downsample)
 
-        if split.startswith('train'):
-            rays_train = self.read_meta('train')
-            if split == 'trainval':
-                rays_val = self.read_meta('test')
-                self.rays = torch.cat(list(rays_train.values())+
-                                      list(rays_val.values()))
-            else:
-                self.rays = torch.cat(list(rays_train.values()))
-        else: # val, test
-            self.rays = self.read_meta(split)
+        self.read_meta(split)
 
     def read_meta(self, split):
         # Step 1: read and scale intrinsics (same for all images)
@@ -36,10 +27,10 @@ class ColmapDataset(BaseDataset):
         w = int(camdata[1].width*self.downsample)
         self.img_wh = (w, h)
         fx = fy = camdata[1].params[0]*self.downsample
-        self.K = np.float32([[fx, 0, w/2],
-                             [0, fy, h/2],
-                             [0,  0,   1]])
-        directions = get_ray_directions(h, w, self.K)
+        self.K = torch.FloatTensor([[fx, 0, w/2],
+                                    [0, fy, h/2],
+                                    [0,  0,   1]])
+        self.directions = get_ray_directions(h, w, self.K)
 
         # Step 2: correct poses
         # read extrinsics (of successfully reconstructed images)
@@ -67,15 +58,11 @@ class ColmapDataset(BaseDataset):
         self.poses[..., 3] /= scale
         self.pts3d /= scale
 
-        # use precomputed test poses
-        rays = {} # {frame_idx: ray tensor}
-        if split == 'test_traj':
+        self.rays = []
+        if split == 'test_traj': # use precomputed test poses
             self.poses = create_spheric_poses(1.2, self.poses[:, 1, 3].mean())
-            for idx, pose in enumerate(self.poses):
-                rays_o, rays_d = get_rays(directions, torch.cuda.FloatTensor(pose))
-
-                rays[idx] = torch.cat([rays_o, rays_d], 1).cpu() # (h*w, 6)
-            return rays
+            self.poses = torch.FloatTensor(self.poses)
+            return
 
         # use every 8th image as test set
         if split=='train':
@@ -86,26 +73,12 @@ class ColmapDataset(BaseDataset):
             self.poses = np.array([x for i, x in enumerate(self.poses) if i%8==0])
 
         print(f'Loading {len(img_paths)} {split} images ...')
-        for idx, pose in enumerate(tqdm(self.poses)):
-            rays_o, rays_d = \
-                get_rays(directions, torch.cuda.FloatTensor(pose))
-            ray = [rays_o, rays_d]
-
-            img_path = img_paths[idx]
+        for img_path in img_paths:
             img = Image.open(img_path)
             img = img.resize(self.img_wh, Image.LANCZOS)
-            img = self.transform(img).cuda() # (c, h, w)
+            img = self.transform(img) # (c, h, w)
             img = rearrange(img, 'c h w -> (h w) c')
-            ray += [img]
+            self.rays += [img]
 
-            try: # try to read depth files if there are
-                disp_path = img_path.replace('images', 'disps').split('.')[-2]+'.pfm'
-                disp = read_pfm(disp_path)[0]
-                disp = cv2.resize(disp, self.img_wh, interpolation=cv2.INTER_NEAREST)
-                disp = torch.cuda.FloatTensor(disp).reshape(-1, 1)
-                ray += [disp]
-            except: pass
-
-            rays[idx] = torch.cat(ray, 1).cpu()
-
-        return rays
+        self.rays = torch.stack(self.rays) # (N_images, hw, ?)
+        self.poses = torch.FloatTensor(self.poses) # (N_images, 3, 4)
