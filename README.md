@@ -136,14 +136,12 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 <details>
   <summary>Tanks and Temples</summary>
 
-|       | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
-|:---:  | :---:    | :---: | :---: | :---:       | :---:  | :---: |
-| *PSNR | 28.22    | 27.57 | 28.00 | 26.16       | 33.94  | 28.78 |
-| **FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
+|      | Ignatius | Truck | Barn  | Caterpillar | Family | AVG   | 
+|:---: | :---:    | :---: | :---: | :---:       | :---:  | :---: |
+| PSNR | 28.30    | 27.67 | 28.00 | 26.16       | 34.27  | 28.78 |
+| *FPS | 10.04    |  7.99 | 16.14 | 10.91       | 6.16   | 10.25 |
 
-*Trained with `downsample=0.5` (due to insufficient RAM) and evaluated with `downsample=1.0`
-
-**Evaluated on `test-traj`
+*Evaluated on `test-traj`
 
 </details>
 
