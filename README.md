@@ -2,7 +2,7 @@
 
 ### Advertisement: stay tuned with [my channel](https://www.youtube.com/channel/UC7UlsMUu_gIgpqNGB4SqSwQ), I will upload cuda tutorials recently, and do a stream about this implementation!
 
-### Update 2022 July 24th: Training on custom data is possible now! (warning: some scenes still fail, I am researching the reason)
+### Update 2022 July 24th: Training on custom data is possible now!
 
 ### Update 2022 July 14th: Multi-GPU training is available now! With multiple GPUs, now you can achieve high quality under a minute!
 
@@ -19,7 +19,9 @@ https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-
 
 https://user-images.githubusercontent.com/11364490/180640362-9e63da7c-4268-43ce-874a-3219c7bd778c.mp4
 
-https://user-images.githubusercontent.com/11364490/180698332-f2303dc3-2e38-49f3-8591-9d3f4e8b314a.mp4
+https://user-images.githubusercontent.com/11364490/181415396-7e378d9e-1d74-43c2-82b0-0f86adfb294d.mp4
+
+https://user-images.githubusercontent.com/11364490/181415347-1db46d8d-5276-404b-8f7c-65cb0b040976.mp4
 
 # :computer: Installation
 
