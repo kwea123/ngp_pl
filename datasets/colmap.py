@@ -24,10 +24,21 @@ class ColmapDataset(BaseDataset):
         h = int(camdata[1].height*self.downsample)
         w = int(camdata[1].width*self.downsample)
         self.img_wh = (w, h)
-        fx = fy = camdata[1].params[0]*self.downsample
-        self.K = torch.FloatTensor([[fx, 0, w/2],
-                                    [0, fy, h/2],
-                                    [0,  0,   1]])
+
+        if camdata[1].model == 'SIMPLE_RADIAL':
+            fx = fy = camdata[1].params[0]*self.downsample
+            cx = camdata[1].params[1]*self.downsample
+            cy = camdata[1].params[2]*self.downsample
+        elif camdata[1].model in ['PINHOLE', 'OPENCV']:
+            fx = camdata[1].params[0]*self.downsample
+            fy = camdata[1].params[1]*self.downsample
+            cx = camdata[1].params[2]*self.downsample
+            cy = camdata[1].params[3]*self.downsample
+        else:
+            raise ValueError(f"Please parse the intrinsics for camera model {camdata[1].model}!")
+        self.K = torch.FloatTensor([[fx, 0, cx],
+                                    [0, fy, cy],
+                                    [0,  0,  1]])
         self.directions = get_ray_directions(h, w, self.K)
 
         # Step 2: correct poses
