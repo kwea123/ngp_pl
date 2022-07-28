@@ -25,7 +25,7 @@ python train.py \
 python train.py \
     --root_dir $ROOT_DIR/Bike \
     --exp_name Bike --no_save_test \
-    --num_epochs 20 --batch_size 16384 --lr 2e-2
+    --num_epochs 20 --batch_size 16384 --lr 1e-2
 
 python train.py \
     --root_dir $ROOT_DIR/Palace \
