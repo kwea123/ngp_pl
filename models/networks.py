@@ -9,7 +9,7 @@ from .rendering import NEAR_DISTANCE
 
 
 class NGP(nn.Module):
-    def __init__(self, scale, rgb_act='sigmoid'):
+    def __init__(self, scale, rgb_act='Sigmoid'):
         super().__init__()
 
         # scene bounding box
@@ -69,15 +69,13 @@ class NGP(nn.Module):
                 network_config={
                     "otype": "FullyFusedMLP",
                     "activation": "ReLU",
-                    "output_activation": "Sigmoid" if rgb_act=='sigmoid' else "None",
+                    "output_activation": rgb_act,
                     "n_neurons": 64,
                     "n_hidden_layers": 2,
                 }
             )
 
         self.sigma_act = TruncExp.apply
-        if rgb_act == 'exp':
-            self.rgb_act = TruncExp.apply
 
     def density(self, x, return_feat=False):
         """
@@ -108,8 +106,6 @@ class NGP(nn.Module):
         d = d/torch.norm(d, dim=1, keepdim=True)
         d = self.dir_encoder((d+1)/2)
         rgbs = self.rgb_net(torch.cat([d, h], 1))
-        if hasattr(self, 'rgb_act'):
-            rgbs = self.rgb_act(rgbs)
 
         return sigmas, rgbs
 
