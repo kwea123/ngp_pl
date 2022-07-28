@@ -32,18 +32,18 @@ class NSVFDataset(BaseDataset):
             else:
                 w, h = int(1920*downsample), int(1080*downsample)
 
-            self.K = np.float32([[fx, 0, w/2],
-                                 [0, fy, h/2],
-                                 [0,  0,   1]])
+            K = np.float32([[fx, 0, w/2],
+                            [0, fy, h/2],
+                            [0,  0,   1]])
         else:
-            self.K = np.loadtxt(os.path.join(root_dir, 'intrinsics.txt'),
-                                dtype=np.float32)[:3, :3]
+            K = np.loadtxt(os.path.join(root_dir, 'intrinsics.txt'),
+                           dtype=np.float32)[:3, :3]
             if 'BlendedMVS' in root_dir:
                 w, h = int(768*downsample), int(576*downsample)
             elif 'Tanks' in root_dir:
                 w, h = int(1920*downsample), int(1080*downsample)
-            self.K[:2] *= downsample
-        self.K = torch.FloatTensor(self.K)
+            K[:2] *= downsample
+        self.K = torch.FloatTensor(K)
         self.directions = get_ray_directions(h, w, self.K)
         self.img_wh = (w, h)
 
