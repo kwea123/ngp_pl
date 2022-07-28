@@ -75,7 +75,7 @@ class NeRFSystem(LightningModule):
 
     def forward(self, rays_o, rays_d, split):
         kwargs = {'test_time': split!='train'}
-        if hparams.dataset_name == 'colmap':
+        if hparams.dataset_name in ['colmap', 'nerfpp']:
             kwargs['exp_step_factor'] = 1/256
 
         return render(self.model, rays_o, rays_d, **kwargs)
@@ -95,10 +95,9 @@ class NeRFSystem(LightningModule):
         self.register_buffer('poses', self.train_dataset.poses.to(self.device))
 
         if hparams.optimize_ext:
-            # only optimize translation for now
             N = len(self.train_dataset.poses)
-            # self.register_parameter('dR',
-            #     nn.Parameter(torch.zeros(N, 3, device=self.device)))
+            self.register_parameter('dR',
+                nn.Parameter(torch.zeros(N, 3, device=self.device)))
             self.register_parameter('dT',
                 nn.Parameter(torch.zeros(N, 3, device=self.device)))
 
@@ -110,9 +109,10 @@ class NeRFSystem(LightningModule):
         self.net_opt = FusedAdam(net_params, hparams.lr, eps=1e-15)
         opts += [self.net_opt]
         if hparams.optimize_ext:
-            # pose_r_opt = FusedAdam([self.dR], 1e-6)
+            # learning rate is hard-coded
+            pose_r_opt = FusedAdam([self.dR], 1e-6)
             pose_t_opt = FusedAdam([self.dT], 1e-6)
-            opts += [pose_t_opt]
+            opts += [pose_r_opt, pose_t_opt]
         net_sch = CosineAnnealingLR(self.net_opt,
                                     hparams.num_epochs,
                                     hparams.lr/30)
@@ -141,12 +141,12 @@ class NeRFSystem(LightningModule):
         if self.global_step%self.S == 0:
             self.model.update_density_grid(0.01*MAX_SAMPLES/3**0.5,
                                            warmup=self.global_step<256,
-                                           erode=hparams.dataset_name!='nsvf')
+                                           erode=hparams.dataset_name=='colmap')
 
         poses = self.poses[batch['img_idxs']] # (B, 3, 4)
         if hparams.optimize_ext:
-            # dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
-            # poses[..., :3] = dR @ poses[..., :3]
+            dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
+            poses[..., :3] = dR @ poses[..., :3]
             dT = self.dT[batch['img_idxs']] # (B, 3)
             poses[..., 3] += dT
 
@@ -174,8 +174,8 @@ class NeRFSystem(LightningModule):
     def validation_step(self, batch, batch_nb):
         rgb_gt = batch['rgb']
         if hparams.optimize_ext:
-            # dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
-            # poses[..., :3] = dR @ poses[..., :3]
+            dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
+            batch['pose'][..., :3] = dR @ batch['pose'][..., :3]
             dT = self.dT[batch['img_idxs']] # (3)
             batch['pose'][..., 3] += dT
         rays_o, rays_d = get_rays(self.directions, batch['pose'])
