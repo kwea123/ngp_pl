@@ -170,4 +170,5 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 # TODO
 
 - [ ] GUI
-- [ ] intrinsics/extrinsics training
+- [ ] multi-sphere images as background
+- [ ] train exposure as HDR-NeRF

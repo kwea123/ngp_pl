@@ -15,10 +15,10 @@ class NeRFPPDataset(BaseDataset):
     def __init__(self, root_dir, split='train', downsample=1.0, **kwargs):
         super().__init__(root_dir, split, downsample)
 
-        K = np.loadtxt(os.path.join(root_dir, 'train/intrinsics/00001.txt'),
+        K = np.loadtxt(glob.glob(os.path.join(self.root_dir, 'train/intrinsics/*.txt'))[0],
                        dtype=np.float32).reshape(4, 4)[:3, :3]
         K[:2] *= downsample
-        w, h = Image.open(os.path.join(root_dir, 'train/rgb/00001.png')).size
+        w, h = Image.open(glob.glob(os.path.join(self.root_dir, 'train/rgb/*.png'))[0]).size
         w, h = int(w*downsample), int(h*downsample)
         self.K = torch.FloatTensor(K)
         self.directions = get_ray_directions(h, w, self.K)
