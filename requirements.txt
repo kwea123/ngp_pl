@@ -10,3 +10,4 @@ jupyter
 scipy
 pymcubes
 trimesh
+dearpygui

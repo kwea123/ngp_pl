@@ -3,6 +3,7 @@
 ckpts/
 logs/
 results/
+output/
 *.png
 *.mp4
 
