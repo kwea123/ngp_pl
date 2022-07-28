@@ -264,9 +264,9 @@ if __name__ == '__main__':
 
     if not hparams.val_only: # save slimmed ckpt for the last epoch
         ckpt_ = \
-            slim_ckpt(f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt',
+            slim_ckpt(f'ckpts/{hparams.dataset_name}/{hparams.exp_name}/epoch={hparams.num_epochs-1}.ckpt',
                       save_poses=hparams.optimize_ext)
-        torch.save(ckpt_, f'ckpts/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
+        torch.save(ckpt_, f'ckpts/{hparams.dataset_name}/{hparams.exp_name}/epoch={hparams.num_epochs-1}_slim.ckpt')
 
     if (not hparams.no_save_test) and \
        hparams.dataset_name=='nsvf' and \
