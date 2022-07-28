@@ -18,7 +18,7 @@ class NeRFPPDataset(BaseDataset):
         K = np.loadtxt(glob.glob(os.path.join(self.root_dir, 'train/intrinsics/*.txt'))[0],
                        dtype=np.float32).reshape(4, 4)[:3, :3]
         K[:2] *= downsample
-        w, h = Image.open(glob.glob(os.path.join(self.root_dir, 'train/rgb/*.png'))[0]).size
+        w, h = Image.open(glob.glob(os.path.join(self.root_dir, 'train/rgb/*'))[0]).size
         w, h = int(w*downsample), int(h*downsample)
         self.K = torch.FloatTensor(K)
         self.directions = get_ray_directions(h, w, self.K)
@@ -36,12 +36,12 @@ class NeRFPPDataset(BaseDataset):
             self.poses = [np.loadtxt(p).reshape(4, 4)[:3] for p in poses_path]
         else:
             if split=='trainval':
-                imgs = sorted(glob.glob(os.path.join(self.root_dir, 'train/rgb/*.png')))+\
-                       sorted(glob.glob(os.path.join(self.root_dir, 'val/rgb/*.png')))
+                imgs = sorted(glob.glob(os.path.join(self.root_dir, 'train/rgb/*')))+\
+                       sorted(glob.glob(os.path.join(self.root_dir, 'val/rgb/*')))
                 poses = sorted(glob.glob(os.path.join(self.root_dir, 'train/pose/*.txt')))+\
                        sorted(glob.glob(os.path.join(self.root_dir, 'val/pose/*.txt')))
             else:
-                imgs = sorted(glob.glob(os.path.join(self.root_dir, split, 'rgb/*.png')))
+                imgs = sorted(glob.glob(os.path.join(self.root_dir, split, 'rgb/*')))
                 poses = sorted(glob.glob(os.path.join(self.root_dir, split, 'pose/*.txt')))
 
             print(f'Loading {len(imgs)} {split} images ...')
