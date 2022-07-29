@@ -52,7 +52,7 @@ class OrbitCamera:
         self.center += 0.0001 * self.rot.as_matrix()[:3, :3] @ np.array([dx, dy, dz])
 
 
-class NeRFGUI:
+class NGPGUI:
     def __init__(self, hparams, K, img_wh, radius=2.5):
         self.hparams = hparams
         self.model = NGP(scale=hparams.scale).cuda()
@@ -92,6 +92,8 @@ class NeRFGUI:
 
     def register_dpg(self):
         dpg.create_context()
+        dpg.create_viewport(title="ngp", width=self.W, height=self.H, resizable=False)
+
         ## register texture ##
         with dpg.texture_registry(show=False):
             dpg.add_raw_texture(
@@ -132,9 +134,6 @@ class NeRFGUI:
                 button=dpg.mvMouseButton_Middle, callback=callback_camera_drag_pan
             )
 
-        ## Window name ##
-        dpg.create_viewport(title="ngp", width=self.W, height=self.H, resizable=False)
-
         ## Avoid scroll bar in the window ##
         with dpg.theme() as theme_no_padding:
             with dpg.theme_component(dpg.mvAll):
@@ -170,6 +169,5 @@ if __name__ == "__main__":
               'read_meta': False}
     dataset = dataset_dict[hparams.dataset_name](**kwargs)
 
-    NeRFGUI(hparams, dataset.K, dataset.img_wh).render()
-
+    NGPGUI(hparams, dataset.K, dataset.img_wh).render()
     dpg.destroy_context()

@@ -169,10 +169,6 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 </details>
 
-# :worried: Difficulties I meet now, call for help
-
-1.  For custom inward 360 data, mine still doesn't train successfully on some scenes. Original code also not always work. Why?
-
 # TODO
 
 - [ ] multi-sphere images as background
