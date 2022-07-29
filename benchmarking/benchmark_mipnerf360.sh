@@ -21,7 +21,7 @@ python train.py \
 python train.py \
     --root_dir $ROOT_DIR/garden --dataset_name colmap \
     --exp_name garden --downsample $DOWNSAMPLE --no_save_test \
-    --num_epochs 20 --scale 4.0 --eval_lpips
+    --num_epochs 20 --scale 16.0 --eval_lpips
 
 python train.py \
     --root_dir $ROOT_DIR/kitchen --dataset_name colmap \
