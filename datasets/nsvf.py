@@ -22,14 +22,15 @@ class NSVFDataset(BaseDataset):
                 np.loadtxt(os.path.join(root_dir, 'bbox.txt'))[:6].reshape(2, 3)
             self.shift = (xyz_max+xyz_min)/2
             self.scale = (xyz_max-xyz_min).max()/2 * 1.05 # enlarge a little
+
+            # hard-code fix the bound error for some scenes...
+            if 'Mic' in self.root_dir: self.scale *= 1.2
+            elif 'Lego' in self.root_dir: self.scale *= 1.1
+
             self.read_meta(split)
 
     def read_intrinsics(self):
         if 'Synthetic' in self.root_dir or 'Ignatius' in self.root_dir:
-            # hard-code fix the bound error for some scenes...
-            if 'Mic' in self.root_dir: self.scale *= 1.2
-            elif 'Lego' in self.root_dir: self.scale *= 1.1
-            ###################################################
             with open(os.path.join(self.root_dir, 'intrinsics.txt')) as f:
                 fx = fy = float(f.readline().split()[0]) * self.downsample
             if 'Synthetic' in self.root_dir:
@@ -48,6 +49,7 @@ class NSVFDataset(BaseDataset):
             elif 'Tanks' in self.root_dir:
                 w, h = int(1920*self.downsample), int(1080*self.downsample)
             K[:2] *= self.downsample
+
         self.K = torch.FloatTensor(K)
         self.directions = get_ray_directions(h, w, self.K)
         self.img_wh = (w, h)
