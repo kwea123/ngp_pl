@@ -18,7 +18,7 @@ def get_opts():
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
 
     parser.add_argument('--optimize_ext', action='store_true', default=False,
-                        help='whether to optimize extrinsics (experimental')
+                        help='whether to optimize extrinsics (experimental)')
 
     parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
