@@ -16,9 +16,12 @@ class ColmapDataset(BaseDataset):
     def __init__(self, root_dir, split='train', downsample=1.0, **kwargs):
         super().__init__(root_dir, split, downsample)
 
-        self.read_meta(split)
+        self.read_intrinsics()
 
-    def read_meta(self, split):
+        if kwargs.get('read_meta', True):
+            self.read_meta(split)
+
+    def read_intrinsics(self):
         # Step 1: read and scale intrinsics (same for all images)
         camdata = read_cameras_binary(os.path.join(self.root_dir, 'sparse/0/cameras.bin'))
         h = int(camdata[1].height*self.downsample)
@@ -41,6 +44,7 @@ class ColmapDataset(BaseDataset):
                                     [0,  0,  1]])
         self.directions = get_ray_directions(h, w, self.K)
 
+    def read_meta(self, split):
         # Step 2: correct poses
         # read extrinsics (of successfully reconstructed images)
         imdata = read_images_binary(os.path.join(self.root_dir, 'sparse/0/images.bin'))

@@ -15,39 +15,42 @@ class NSVFDataset(BaseDataset):
     def __init__(self, root_dir, split='train', downsample=1.0, **kwargs):
         super().__init__(root_dir, split, downsample)
 
-        xyz_min, xyz_max = \
-            np.loadtxt(os.path.join(root_dir, 'bbox.txt'))[:6].reshape(2, 3)
-        self.shift = (xyz_max+xyz_min)/2
-        self.scale = (xyz_max-xyz_min).max()/2 * 1.05 # enlarge a little
+        self.read_intrinsics()
 
-        if 'Synthetic' in root_dir or 'Ignatius' in root_dir:
+        if kwargs.get('read_meta', True):
+            xyz_min, xyz_max = \
+                np.loadtxt(os.path.join(root_dir, 'bbox.txt'))[:6].reshape(2, 3)
+            self.shift = (xyz_max+xyz_min)/2
+            self.scale = (xyz_max-xyz_min).max()/2 * 1.05 # enlarge a little
+            self.read_meta(split)
+
+    def read_intrinsics(self):
+        if 'Synthetic' in self.root_dir or 'Ignatius' in self.root_dir:
             # hard-code fix the bound error for some scenes...
-            if 'Mic' in root_dir: self.scale *= 1.2
-            elif 'Lego' in root_dir: self.scale *= 1.1
+            if 'Mic' in self.root_dir: self.scale *= 1.2
+            elif 'Lego' in self.root_dir: self.scale *= 1.1
             ###################################################
-            with open(os.path.join(root_dir, 'intrinsics.txt')) as f:
-                fx = fy = float(f.readline().split()[0]) * downsample
-            if 'Synthetic' in root_dir:
-                w = h = int(800*downsample)
+            with open(os.path.join(self.root_dir, 'intrinsics.txt')) as f:
+                fx = fy = float(f.readline().split()[0]) * self.downsample
+            if 'Synthetic' in self.root_dir:
+                w = h = int(800*self.downsample)
             else:
-                w, h = int(1920*downsample), int(1080*downsample)
+                w, h = int(1920*self.downsample), int(1080*self.downsample)
 
             K = np.float32([[fx, 0, w/2],
                             [0, fy, h/2],
                             [0,  0,   1]])
         else:
-            K = np.loadtxt(os.path.join(root_dir, 'intrinsics.txt'),
+            K = np.loadtxt(os.path.join(self.root_dir, 'intrinsics.txt'),
                            dtype=np.float32)[:3, :3]
-            if 'BlendedMVS' in root_dir:
-                w, h = int(768*downsample), int(576*downsample)
-            elif 'Tanks' in root_dir:
-                w, h = int(1920*downsample), int(1080*downsample)
-            K[:2] *= downsample
+            if 'BlendedMVS' in self.root_dir:
+                w, h = int(768*self.downsample), int(576*self.downsample)
+            elif 'Tanks' in self.root_dir:
+                w, h = int(1920*self.downsample), int(1080*self.downsample)
+            K[:2] *= self.downsample
         self.K = torch.FloatTensor(K)
         self.directions = get_ray_directions(h, w, self.K)
         self.img_wh = (w, h)
-
-        self.read_meta(split)
 
     def read_meta(self, split):
         self.rays = []

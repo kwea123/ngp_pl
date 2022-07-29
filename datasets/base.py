@@ -13,6 +13,9 @@ class BaseDataset(Dataset):
         self.downsample = downsample
         self.define_transforms()
 
+    def read_intrinsics(self):
+        raise NotImplementedError
+
     def define_transforms(self):
         self.transform = T.ToTensor()
 
