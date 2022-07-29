@@ -74,7 +74,8 @@ class NeRFSystem(LightningModule):
             create_meshgrid3d(G, G, G, False, dtype=torch.int32).reshape(-1, 3))
 
     def forward(self, rays_o, rays_d, split):
-        kwargs = {'test_time': split!='train'}
+        kwargs = {'test_time': split!='train',
+                  'random_bg': self.hparams.random_bg}
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
             kwargs['exp_step_factor'] = 1/256
 

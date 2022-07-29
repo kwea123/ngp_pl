@@ -19,6 +19,8 @@ def get_opts():
 
     parser.add_argument('--optimize_ext', action='store_true', default=False,
                         help='whether to optimize extrinsics (experimental)')
+    parser.add_argument('--random_bg', action='store_true', default=False,
+                        help='whether to train with random bg color (real dataset only)')
 
     parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
