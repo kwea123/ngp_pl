@@ -70,7 +70,8 @@ class NSVFDataset(BaseDataset):
         else:
             if split == 'train': prefix = '0_'
             elif split == 'trainval': prefix = '[0-1]_'
-            elif 'Synthetic' in self.root_dir: prefix = '2_'
+            elif split == 'val': prefix = '1_'
+            elif 'Synthetic' in self.root_dir: prefix = '2_' # test set for synthetic scenes
             elif split == 'test': prefix = '1_' # test set for real scenes
             else: raise ValueError(f'{split} split not recognized!')
             imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
