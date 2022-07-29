@@ -66,7 +66,6 @@ class NeRFGUI:
 
         self.dt = 0
 
-        dpg.create_context()
         self.register_dpg()
 
     def render_pose(self, pose):
@@ -75,8 +74,7 @@ class NeRFGUI:
             get_rays(self.directions, torch.cuda.FloatTensor(pose))
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
             exp_step_factor = 1/256
-        else:
-            exp_step_factor = 0
+        else: exp_step_factor = 0
 
         results = render(self.model, rays_o, rays_d,
                          **{'test_time': True,
@@ -90,10 +88,8 @@ class NeRFGUI:
 
         return rgb_pred
 
-    def __del__(self):
-        dpg.destroy_context()
-
     def register_dpg(self):
+        dpg.create_context()
         ## register texture ##
         with dpg.texture_registry(show=False):
             dpg.add_raw_texture(
@@ -101,47 +97,33 @@ class NeRFGUI:
                 self.H,
                 self.render_buffer,
                 format=dpg.mvFormat_Float_rgb,
-                tag="_texture",
-            )
+                tag="_texture")
 
         ## register window ##
-        # the rendered image, as the primary window
         with dpg.window(tag="_primary_window", width=self.W, height=self.H):
             dpg.add_image("_texture")
         dpg.set_primary_window("_primary_window", True)
 
         ## control window ##
-        with dpg.window(label="Control", tag="_control_window", width=500, height=150):
+        with dpg.window(label="Control", tag="_control_window", width=200, height=150):
             with dpg.collapsing_header(label="Info", default_open=True):
                 dpg.add_separator()
                 dpg.add_text('', tag="_log_time")
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
-            if not dpg.is_item_focused("_primary_window"):
-                return
             dx = app_data[1]
             dy = app_data[2]
             self.cam.orbit(dx, dy)
-            self.need_update = True
-            dpg.set_value("_log_time", f'Render time: {1000*self.dt:.2f} ms')
 
         def callback_camera_wheel_scale(sender, app_data):
-            if not dpg.is_item_focused("_primary_window"):
-                return
             delta = app_data
             self.cam.scale(delta)
-            self.need_update = True
-            dpg.set_value("_log_time", f'Render time: {1000*self.dt:.2f} ms')
 
         def callback_camera_drag_pan(sender, app_data):
-            if not dpg.is_item_focused("_primary_window"):
-                return
             dx = app_data[1]
             dy = app_data[2]
             self.cam.pan(dx, dy)
-            self.need_update = True
-            dpg.set_value("_log_time", f'Render time: {1000*self.dt:.2f} ms')
 
         with dpg.handler_registry():
             dpg.add_mouse_drag_handler(
@@ -153,9 +135,7 @@ class NeRFGUI:
             )
 
         ## Window name ##
-        dpg.create_viewport(
-            title="ngp-pl", width=self.W, height=self.H, resizable=False
-        )
+        dpg.create_viewport(title="ngp", width=self.W, height=self.H, resizable=False)
 
         ## Avoid scroll bar in the window ##
         with dpg.theme() as theme_no_padding:
@@ -178,6 +158,7 @@ class NeRFGUI:
     def render(self):
         while dpg.is_dearpygui_running():
             dpg.set_value("_texture", self.render_pose(self.cam.pose))
+            dpg.set_value("_log_time", f'Render time: {1000*self.dt:.2f} ms')
             dpg.render_dearpygui_frame()
 
 
@@ -188,5 +169,6 @@ if __name__ == "__main__":
               'read_meta': False}
     dataset = dataset_dict[hparams.dataset_name](**kwargs)
 
-    gui = NeRFGUI(hparams, dataset.K, dataset.img_wh)
-    gui.render()
+    NeRFGUI(hparams, dataset.K, dataset.img_wh).render()
+
+    dpg.destroy_context()
