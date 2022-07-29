@@ -2,6 +2,8 @@
 
 ### Advertisement: stay tuned with [my channel](https://www.youtube.com/channel/UC7UlsMUu_gIgpqNGB4SqSwQ), I will upload cuda tutorials recently, and do a stream about this implementation!
 
+### Update 2022 July 29th: GUI prototype is available now (see following video)!
+
 ### Update 2022 July 24th: Training on custom data is possible now!
 
 ### Update 2022 July 14th: Multi-GPU training is available now! With multiple GPUs, now you can achieve high quality under a minute!
@@ -169,6 +171,5 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 # TODO
 
-- [ ] GUI
 - [ ] multi-sphere images as background
 - [ ] train exposure as HDR-NeRF
