@@ -46,4 +46,4 @@ python train.py \
 python train.py \
     --root_dir $ROOT_DIR/treehill --dataset_name colmap \
     --exp_name bicycle --downsample $DOWNSAMPLE --no_save_test \
-    --num_epochs 20 --batch_size 4096 --scale 16.0 --eval_lpips
+    --num_epochs 20 --batch_size 4096 --scale 64.0 --eval_lpips
