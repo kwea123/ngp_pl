@@ -5,7 +5,7 @@ from einops import rearrange
 
 
 @torch.cuda.amp.autocast(dtype=torch.float32)
-def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
+def get_ray_directions(H, W, K, device='cpu', random=False, return_uv=False, flatten=True):
     """
     Get ray directions for all pixels in camera coordinate [right down front].
     Reference: https://www.scratchapixel.com/lessons/3d-basic-rendering/
@@ -21,7 +21,7 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
         directions: (H, W, 3) or (H*W, 3), the direction of the rays in camera coordinate
         uv: (H, W, 2) or (H*W, 2) image coordinates
     """
-    grid = create_meshgrid(H, W, False)[0] # (H, W, 2)
+    grid = create_meshgrid(H, W, False, device=device)[0] # (H, W, 2)
     u, v = grid.unbind(-1)
 
     fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]

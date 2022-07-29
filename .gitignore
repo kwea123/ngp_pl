@@ -3,7 +3,6 @@
 ckpts/
 logs/
 results/
-*.png
 *.mp4
 
 # Byte-compiled / optimized / DLL files

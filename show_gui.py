@@ -16,10 +16,10 @@ import warnings; warnings.filterwarnings("ignore")
 
 
 class OrbitCamera:
-    def __init__(self, img_wh, r=5, fovy=50):
+    def __init__(self, K, img_wh, r=5):
+        self.K = K
         self.W, self.H = img_wh
         self.radius = r  # camera distance from center
-        self.fovy = fovy  # in degree
         self.center = np.zeros(3, dtype=np.float32)
         self.rot = R.from_quat([0, 1, 0, 0])
         self.up = np.float32([0, 1, 0])
@@ -53,25 +53,26 @@ class OrbitCamera:
 
 
 class NeRFGUI:
-    def __init__(self, hparams, K, img_wh, radius=2.5, fovy=50):
+    def __init__(self, hparams, K, img_wh, radius=2.5):
         self.hparams = hparams
         self.model = NGP(scale=hparams.scale).cuda()
         load_ckpt(self.model, hparams.ckpt_path)
 
+        self.cam = OrbitCamera(K, img_wh, r=radius)
         self.W, self.H = img_wh
-        self.directions = get_ray_directions(self.H, self.W, K).cuda()
-
-        self.cam = OrbitCamera(img_wh, r=radius, fovy=fovy)
         self.render_buffer = np.ones((self.W, self.H, 3), dtype=np.float32)
 
+        # placeholders
         self.dt = 0
+        self.mean_samples = 0
 
         self.register_dpg()
 
-    def render_pose(self, pose):
+    def render_cam(self, cam):
         t = time.time()
+        directions = get_ray_directions(cam.H, cam.W, cam.K, device='cuda')
         rays_o, rays_d = \
-            get_rays(self.directions, torch.cuda.FloatTensor(pose))
+            get_rays(directions, torch.cuda.FloatTensor(cam.pose))
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
             exp_step_factor = 1/256
         else: exp_step_factor = 0
@@ -85,6 +86,7 @@ class NeRFGUI:
                              "(h w) c -> h w c", h=self.H)
         torch.cuda.synchronize()
         self.dt = time.time()-t
+        self.mean_samples = results['total_samples']/len(rays_o)
 
         return rgb_pred
 
@@ -108,22 +110,18 @@ class NeRFGUI:
         with dpg.window(label="Control", tag="_control_window", width=200, height=150):
             with dpg.collapsing_header(label="Info", default_open=True):
                 dpg.add_separator()
-                dpg.add_text('', tag="_log_time")
+                dpg.add_text('no data', tag="_log_time")
+                dpg.add_text('no data', tag="_samples_per_ray")
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
-            dx = app_data[1]
-            dy = app_data[2]
-            self.cam.orbit(dx, dy)
+            self.cam.orbit(app_data[1], app_data[2])
 
         def callback_camera_wheel_scale(sender, app_data):
-            delta = app_data
-            self.cam.scale(delta)
+            self.cam.scale(app_data)
 
         def callback_camera_drag_pan(sender, app_data):
-            dx = app_data[1]
-            dy = app_data[2]
-            self.cam.pan(dx, dy)
+            self.cam.pan(app_data[1], app_data[2])
 
         with dpg.handler_registry():
             dpg.add_mouse_drag_handler(
@@ -153,12 +151,15 @@ class NeRFGUI:
 
         ## Launch the gui ##
         dpg.setup_dearpygui()
+        dpg.set_viewport_small_icon("assets/icon.png")
+        dpg.set_viewport_large_icon("assets/icon.png")
         dpg.show_viewport()
 
     def render(self):
         while dpg.is_dearpygui_running():
-            dpg.set_value("_texture", self.render_pose(self.cam.pose))
+            dpg.set_value("_texture", self.render_cam(self.cam))
             dpg.set_value("_log_time", f'Render time: {1000*self.dt:.2f} ms')
+            dpg.set_value("_samples_per_ray", f'Samples/ray: {self.mean_samples:.2f}')
             dpg.render_dearpygui_frame()
 
 
