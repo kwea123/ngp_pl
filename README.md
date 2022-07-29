@@ -15,6 +15,8 @@ Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high q
 
 # :paintbrush: Gallery
 
+https://user-images.githubusercontent.com/11364490/181671484-d5e154c8-6cea-4d52-94b5-1e5dd92955f2.mp4
+
 https://user-images.githubusercontent.com/11364490/177025079-cb92a399-2600-4e10-94e0-7cbe09f32a6f.mp4
 
 https://user-images.githubusercontent.com/11364490/176821462-83078563-28e1-4563-8e7a-5613b505e54a.mp4
@@ -79,6 +81,8 @@ More options can be found in [opt.py](opt.py).
 # :mag_right: Testing
 
 Use `test.ipynb` to generate images. Lego pretrained model is available [here](https://github.com/kwea123/ngp_pl/releases/tag/v1.0)
+
+GUI usage: run `python show_gui.py` followed by the **same** hyperparameters used in training (`dataset_name`, `root_dir`, etc)
 
 # Comparison with torch-ngp and the paper
 
