@@ -39,7 +39,7 @@ def get_ray_directions(H, W, K, random=False, return_uv=False, flatten=True):
 
     if return_uv:
         return directions, grid
-    return directions
+    return directions.cuda()
 
 
 @torch.cuda.amp.autocast(dtype=torch.float32)

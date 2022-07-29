@@ -66,7 +66,7 @@ class NeRFSystem(LightningModule):
             for p in self.val_lpips.net.parameters():
                 p.requires_grad = False
 
-        self.model = NGP(scale=hparams.scale)
+        self.model = NGP(scale=self.hparams.scale)
         G = self.model.grid_size
         self.model.register_buffer('density_grid',
             torch.zeros(self.model.cascades, G**3))
