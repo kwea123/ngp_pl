@@ -10,6 +10,7 @@ from datasets import dataset_dict
 from datasets.ray_utils import get_ray_directions, get_rays
 from models.networks import NGP
 from models.rendering import render
+from train import depth2img
 from utils import load_ckpt
 
 import warnings; warnings.filterwarnings("ignore")
@@ -63,6 +64,7 @@ class NGPGUI:
         # placeholders
         self.dt = 0
         self.mean_samples = 0
+        self.img_mode = 0
 
         self.register_dpg()
 
@@ -79,16 +81,21 @@ class NGPGUI:
 
         results = render(self.model, rays_o, rays_d,
                          **{'test_time': True,
+                            'to_cpu': True, 'to_numpy': True,
                             'T_threshold': 1e-2,
+                            'max_samples': 100,
                             'exp_step_factor': exp_step_factor})
 
-        rgb_pred = rearrange(results["rgb"].cpu().numpy(),
-                             "(h w) c -> h w c", h=self.H)
+        rgb = rearrange(results["rgb"], "(h w) c -> h w c", h=self.H)
+        depth = rearrange(results["depth"], "(h w) -> h w", h=self.H)
         torch.cuda.synchronize()
         self.dt = time.time()-t
         self.mean_samples = results['total_samples']/len(rays_o)
 
-        return rgb_pred
+        if self.img_mode == 0:
+            return rgb
+        elif self.img_mode == 1:
+            return depth2img(depth).astype(np.float32)/255.0
 
     def register_dpg(self):
         dpg.create_context()
@@ -108,9 +115,14 @@ class NGPGUI:
             dpg.add_image("_texture")
         dpg.set_primary_window("_primary_window", True)
 
+        def callback_depth(sender, app_data):
+            self.img_mode = 1-self.img_mode
+
         ## control window ##
         with dpg.window(label="Control", tag="_control_window", width=200, height=150):
             with dpg.collapsing_header(label="Info", default_open=True):
+                dpg.add_button(label="show depth", tag="_button_depth",
+                               callback=callback_depth)
                 dpg.add_separator()
                 dpg.add_text('no data', tag="_log_time")
                 dpg.add_text('no data', tag="_samples_per_ray")

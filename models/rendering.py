@@ -34,7 +34,11 @@ def render(model, rays_o, rays_d, **kwargs):
 
     results = render_func(model, rays_o, rays_d, hits_t, **kwargs)
     for k, v in results.items():
-        results[k] = v.cpu() if kwargs.get('to_cpu', False) else v
+        if kwargs.get('to_cpu', False):
+            v = v.cpu()
+            if kwargs.get('to_numpy', False):
+                v = v.numpy()
+        results[k] = v
     return results
 
 
@@ -67,7 +71,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
     # otherwise, 4 is more efficient empirically
     min_samples = 1 if exp_step_factor==0 else 4
 
-    while samples < MAX_SAMPLES:
+    while samples < kwargs.get('max_samples', MAX_SAMPLES):
         N_alive = len(alive_indices)
         if N_alive==0: break
 
