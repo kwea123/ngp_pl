@@ -16,40 +16,38 @@ import warnings; warnings.filterwarnings("ignore")
 
 
 class OrbitCamera:
-    def __init__(self, K, img_wh, r=5):
+    def __init__(self, K, img_wh, r):
         self.K = K
         self.W, self.H = img_wh
-        self.radius = r  # camera distance from center
-        self.center = np.zeros(3, dtype=np.float32)
-        self.rot = R.from_quat([0, 1, 0, 0])
-        self.up = np.float32([0, 1, 0])
+        self.radius = r
+        self.center = np.zeros(3)
+        self.rot = np.eye(3)
 
     @property
     def pose(self):
         # first move camera to radius
-        res = np.eye(4, dtype=np.float32)
+        res = np.eye(4)
         res[2, 3] -= self.radius
         # rotate
-        rot = np.eye(4, dtype=np.float32)
-        rot[:3, :3] = self.rot.as_matrix()
+        rot = np.eye(4)
+        rot[:3, :3] = self.rot
         res = rot @ res
         # translate
         res[:3, 3] -= self.center
         return res
 
     def orbit(self, dx, dy):
-        # TODO: this requires change....
-        # rotate along camera up/side axis!
-        side = self.rot.as_matrix()[:3, 0]
-        rotvec_x = self.up * np.radians(0.03 * dx)
-        rotvec_y = side * np.radians(-0.03 * dy)
-        self.rot = R.from_rotvec(rotvec_x) * R.from_rotvec(rotvec_y) * self.rot
+        rotvec_x = self.rot[:, 1] * np.radians(0.05 * dx)
+        rotvec_y = self.rot[:, 0] * np.radians(-0.05 * dy)
+        self.rot = R.from_rotvec(rotvec_y).as_matrix() @ \
+                   R.from_rotvec(rotvec_x).as_matrix() @ \
+                   self.rot
 
     def scale(self, delta):
         self.radius *= 1.1 ** (-delta)
 
     def pan(self, dx, dy, dz=0):
-        self.center += 0.0001 * self.rot.as_matrix()[:3, :3] @ np.array([dx, dy, dz])
+        self.center += 1e-4 * self.rot @ np.array([dx, dy, dz])
 
 
 class NGPGUI:
@@ -73,6 +71,8 @@ class NGPGUI:
         directions = get_ray_directions(cam.H, cam.W, cam.K, device='cuda')
         rays_o, rays_d = \
             get_rays(directions, torch.cuda.FloatTensor(cam.pose))
+
+        # TODO: set these attributes by gui
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
             exp_step_factor = 1/256
         else: exp_step_factor = 0
@@ -92,7 +92,7 @@ class NGPGUI:
 
     def register_dpg(self):
         dpg.create_context()
-        dpg.create_viewport(title="ngp", width=self.W, height=self.H, resizable=False)
+        dpg.create_viewport(title="ngp_pl", width=self.W, height=self.H, resizable=False)
 
         ## register texture ##
         with dpg.texture_registry(show=False):
