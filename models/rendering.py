@@ -5,7 +5,7 @@ from einops import rearrange
 import vren
 
 MAX_SAMPLES = 1024
-NEAR_DISTANCE = 0.05
+NEAR_DISTANCE = 0.01
 
 
 def render(model, rays_o, rays_d, **kwargs):
