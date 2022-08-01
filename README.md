@@ -15,7 +15,9 @@ Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high q
 
 # :paintbrush: Gallery
 
-See [GALLERY.md](GALLERY.md)
+https://user-images.githubusercontent.com/11364490/181671484-d5e154c8-6cea-4d52-94b5-1e5dd92955f2.mp4
+
+Other representative videos are in [GALLERY.md](GALLERY.md)
 
 # :computer: Installation
 
