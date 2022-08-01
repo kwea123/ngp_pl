@@ -73,7 +73,22 @@ class NeRFSystem(LightningModule):
         self.model.register_buffer('grid_coords',
             create_meshgrid3d(G, G, G, False, dtype=torch.int32).reshape(-1, 3))
 
-    def forward(self, rays_o, rays_d, split):
+    def forward(self, batch, split):
+        if split=='train':
+            poses = self.poses[batch['img_idxs']]
+            directions = self.directions[batch['pix_idxs']]
+        else:
+            poses = batch['pose']
+            directions = self.directions
+
+        if self.hparams.optimize_ext:
+            dR = axisangle_to_R(self.dR[batch['img_idxs']])
+            poses[..., :3] = dR @ poses[..., :3]
+            dT = self.dT[batch['img_idxs']]
+            poses[..., 3] += dT
+
+        rays_o, rays_d = get_rays(directions, poses)
+
         kwargs = {'test_time': split!='train',
                   'random_bg': self.hparams.random_bg}
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
@@ -144,15 +159,7 @@ class NeRFSystem(LightningModule):
                                            warmup=self.global_step<256,
                                            erode=self.hparams.dataset_name=='colmap')
 
-        poses = self.poses[batch['img_idxs']] # (B, 3, 4)
-        if self.hparams.optimize_ext:
-            dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
-            poses[..., :3] = dR @ poses[..., :3]
-            dT = self.dT[batch['img_idxs']] # (B, 3)
-            poses[..., 3] += dT
-
-        rays_o, rays_d = get_rays(self.directions[batch['pix_idxs']], poses)
-        results = self(rays_o, rays_d, split='train')
+        results = self(batch, split='train')
         loss_d = self.loss(results, batch)
         loss = sum(lo.mean() for lo in loss_d.values())
 
@@ -160,9 +167,8 @@ class NeRFSystem(LightningModule):
             self.train_psnr(results['rgb'], batch['rgb'])
         self.log('lr', self.net_opt.param_groups[0]['lr'])
         self.log('train/loss', loss)
-        self.log('train/s_per_ray',
-                 results['total_samples']/len(rays_o), prog_bar=True)
-        self.log('train/psnr', self.train_psnr, prog_bar=True)
+        self.log('train/s_per_ray', results['total_samples']/len(batch['rgb']), True)
+        self.log('train/psnr', self.train_psnr, True)
 
         return loss
 
@@ -174,13 +180,7 @@ class NeRFSystem(LightningModule):
 
     def validation_step(self, batch, batch_nb):
         rgb_gt = batch['rgb']
-        if self.hparams.optimize_ext:
-            dR = axisangle_to_R(self.dR[batch['img_idxs']]) # (B, 3, 3)
-            batch['pose'][..., :3] = dR @ batch['pose'][..., :3]
-            dT = self.dT[batch['img_idxs']] # (3)
-            batch['pose'][..., 3] += dT
-        rays_o, rays_d = get_rays(self.directions, batch['pose'])
-        results = self(rays_o, rays_d, split='test')
+        results = self(batch, split='test')
 
         logs = {}
         # compute each metric per image
@@ -213,7 +213,7 @@ class NeRFSystem(LightningModule):
     def validation_epoch_end(self, outputs):
         psnrs = torch.stack([x['psnr'] for x in outputs])
         mean_psnr = all_gather_ddp_if_available(psnrs).mean()
-        self.log('test/psnr', mean_psnr, prog_bar=True)
+        self.log('test/psnr', mean_psnr, True)
 
         ssims = torch.stack([x['ssim'] for x in outputs])
         mean_ssim = all_gather_ddp_if_available(ssims).mean()
