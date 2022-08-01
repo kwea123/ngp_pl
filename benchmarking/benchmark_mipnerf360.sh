@@ -11,12 +11,12 @@ python train.py \
 python train.py \
     --root_dir $ROOT_DIR/bonsai --dataset_name colmap \
     --exp_name bonsai --downsample $DOWNSAMPLE --no_save_test \
-    --num_epochs 20 --scale 4.0 --eval_lpips
+    --num_epochs 20 --batch_size 4096 --scale 16.0 --eval_lpips
 
 python train.py \
     --root_dir $ROOT_DIR/counter --dataset_name colmap \
     --exp_name counter --downsample $DOWNSAMPLE --no_save_test \
-    --num_epochs 20 --scale 4.0
+    --num_epochs 20 --scale 16.0 --eval_lpips
 
 python train.py \
     --root_dir $ROOT_DIR/garden --dataset_name colmap \
