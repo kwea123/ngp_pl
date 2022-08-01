@@ -2,11 +2,11 @@
 
 ### Advertisement: stay tuned with [my channel](https://www.youtube.com/channel/UC7UlsMUu_gIgpqNGB4SqSwQ), I will upload cuda tutorials recently, and do a stream about this implementation!
 
-### Update 2022 July 29th: GUI prototype is available now (see following video)!
+<!-- ### Update 2022 July 29th: GUI prototype is available now (see following video)!
 
 ### Update 2022 July 24th: Training on custom data is possible now!
 
-### Update 2022 July 14th: Multi-GPU training is available now! With multiple GPUs, now you can achieve high quality under a minute!
+### Update 2022 July 14th: Multi-GPU training is available now! With multiple GPUs, now you can achieve high quality under a minute! -->
 
 Instant-ngp (only NeRF) in pytorch+cuda trained with pytorch-lightning (**high quality with high speed**). This repo aims at providing a concise pytorch interface to facilitate future research, and am grateful if you can share it (and a citation is highly appreciated)!
 
@@ -50,33 +50,36 @@ This implementation has **strict** requirements due to dependencies on other lib
 
 * Cuda extension: Upgrade `pip` to >= 22.1 and run `pip install models/csrc/` (please run this each time you `pull` the code)
 
-# :books: Data preparation
+# :books: Supported Datasets
 
-1.  Synthetic data
+1.  NSVF data
 
-Download preprocessed datasets from [NSVF](https://github.com/facebookresearch/NSVF#dataset). **Do not change the folder names** since there is some hard-coded fix in my dataloader.
+Download preprocessed datasets (`Synthetic_NeRF`, `Synthetic_NSVF`, `BlendedMVS`, `TanksAndTemples`) from [NSVF](https://github.com/facebookresearch/NSVF#dataset). **Do not change the folder names** since there is some hard-coded fix in my dataloader.
 
-2.  Custom data
+2.  NeRF++ data
 
-Please run `colmap` and get a folder `sparse/0` under which there are `cameras.bin`, `images.bin` and `points3D.bin`. [nerf_llff_data](https://drive.google.com/file/d/16VnMcF1KJYxN9QId6TClMsZRahHNMW5g/view?usp=sharing) [mipnerf360 data](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip) also supported.
+Download data from [here](https://github.com/Kai-46/nerfplusplus#data).
+
+3.  Colmap data
+
+For custom data, run `colmap` and get a folder `sparse/0` under which there are `cameras.bin`, `images.bin` and `points3D.bin`. The following data with colmap format are also supported:
+    *  [nerf_llff_data](https://drive.google.com/file/d/16VnMcF1KJYxN9QId6TClMsZRahHNMW5g/view?usp=sharing) 
+    *  [mipnerf360 data](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip)
+    *  [HDR-NeRF data](https://drive.google.com/drive/folders/1OTDLLH8ydKX1DcaNpbQ46LlP0dKx6E-I). Additionally, download my colmap pose estimation from [here](https://drive.google.com/file/d/1TXxgf_ZxNB4o67FVD_r0aBUIZVRgZYMX/view?usp=sharing) and extract to the same location.
 
 # :key: Training
 
 Quickstart:
 
-1.  Synthetic data
-
 `python train.py --root_dir <path/to/lego> --exp_name Lego`
 
-2.  Custom data
+It will train the Lego scene for 30k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
 
-`python train.py --root_dir <path/to/fern> --dataset_name colmap --exp_name fern --scale 2.0 --downsample 0.25`
-
-It will train the scene for 30k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
-
-If your GPU has larger memory, you can try increasing `batch_size` (and `lr`) and reducing `num_epochs` (e.g. `--batch_size 16384 --lr 2e-2 --num_epochs 20`). In my experiments, this further reduces the training time by 10~25s while maintaining the same quality.
+<!-- If your GPU has larger memory, you can try increasing `batch_size` (and `lr`) and reducing `num_epochs` (e.g. `--batch_size 16384 --lr 2e-2 --num_epochs 20`). In my experiments, this further reduces the training time by 10~25s while maintaining the same quality. -->
 
 More options can be found in [opt.py](opt.py).
+
+For other public dataset training, please refer to the scripts under `benchmarking`.
 
 # :mag_right: Testing
 
@@ -107,8 +110,6 @@ As for speed, mine is faster than torch-ngp, but is still only half fast as inst
   <br>
   <sup>Left: torch-ngp. Right: mine.</sup>
 </p>
-
-More details are in the following section.
 
 # :chart: Benchmarks
 
@@ -171,5 +172,5 @@ Followings are my results trained using 1 RTX 2080 Ti (qualitative results [here
 
 # TODO
 
+- [ ] use super resolution in GUI to improve FPS
 - [ ] multi-sphere images as background
-- [ ] train exposure as HDR-NeRF
