@@ -12,6 +12,8 @@ class NGP(nn.Module):
     def __init__(self, scale, rgb_act='Sigmoid'):
         super().__init__()
 
+        self.rgb_act = rgb_act
+
         # scene bounding box
         self.scale = scale
         self.register_buffer('center', torch.zeros(1, 3))
@@ -32,8 +34,7 @@ class NGP(nn.Module):
 
         self.xyz_encoder = \
             tcnn.NetworkWithInputEncoding(
-                n_input_dims=3,
-                n_output_dims=16,
+                n_input_dims=3, n_output_dims=16,
                 encoding_config={
                     "otype": "Grid",
 	                "type": "Hash",
@@ -53,6 +54,8 @@ class NGP(nn.Module):
                 }
             )
 
+        self.sigma_act = TruncExp.apply
+
         self.dir_encoder = \
             tcnn.Encoding(
                 n_input_dims=3,
@@ -64,18 +67,30 @@ class NGP(nn.Module):
 
         self.rgb_net = \
             tcnn.Network(
-                n_input_dims=32,
-                n_output_dims=3,
+                n_input_dims=32, n_output_dims=3,
                 network_config={
                     "otype": "FullyFusedMLP",
                     "activation": "ReLU",
-                    "output_activation": rgb_act,
+                    "output_activation": self.rgb_act,
                     "n_neurons": 64,
                     "n_hidden_layers": 2,
                 }
             )
 
-        self.sigma_act = TruncExp.apply
+        if self.rgb_act == 'None': # rgb_net output is log-radiance
+            for i in range(3): # independent tonemappers for r,g,b
+                tonemapper_net = \
+                    tcnn.Network(
+                        n_input_dims=1, n_output_dims=1,
+                        network_config={
+                            "otype": "FullyFusedMLP",
+                            "activation": "ReLU",
+                            "output_activation": "Sigmoid",
+                            "n_neurons": 64,
+                            "n_hidden_layers": 1,
+                        }
+                    )
+                setattr(self, f'tonemapper_net_{i}', tonemapper_net)
 
     def density(self, x, return_feat=False):
         """
@@ -92,7 +107,30 @@ class NGP(nn.Module):
         if return_feat: return sigmas, h
         return sigmas
 
-    def forward(self, x, d):
+    def log_radiance_to_rgb(self, log_radiances, **kwargs):
+        """
+        Convert log-radiance to rgb as the setting in HDR-NeRF.
+        Called only when self.rgb_act == 'None' (with exposure)
+
+        Inputs:
+            log_radiances: (N, 3)
+
+        Outputs:
+            rgbs: (N, 3)
+        """
+        if 'exposure' in kwargs:
+            log_exposure = torch.log(kwargs['exposure'])
+        else: # unit exposure by default
+            log_exposure = 0
+
+        out = []
+        for i in range(3):
+            inp = log_radiances[:, i:i+1]+log_exposure
+            out += [getattr(self, f'tonemapper_net_{i}')(inp)]
+        rgbs = torch.cat(out, 1)
+        return rgbs
+
+    def forward(self, x, d, **kwargs):
         """
         Inputs:
             x: (N, 3) xyz in [-scale, scale]
@@ -106,6 +144,9 @@ class NGP(nn.Module):
         d = d/torch.norm(d, dim=1, keepdim=True)
         d = self.dir_encoder((d+1)/2)
         rgbs = self.rgb_net(torch.cat([d, h], 1))
+
+        if self.rgb_act == 'None': # rgbs is log-radiance
+            rgbs = self.log_radiance_to_rgb(rgbs, **kwargs)
 
         return sigmas, rgbs
 

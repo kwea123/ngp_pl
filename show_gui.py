@@ -54,7 +54,8 @@ class OrbitCamera:
 class NGPGUI:
     def __init__(self, hparams, K, img_wh, radius=2.5):
         self.hparams = hparams
-        self.model = NGP(scale=hparams.scale).cuda()
+        rgb_act = 'None' if self.hparams.use_exposure else 'Sigmoid'
+        self.model = NGP(scale=hparams.scale, rgb_act=rgb_act).cuda()
         load_ckpt(self.model, hparams.ckpt_path)
 
         self.cam = OrbitCamera(K, img_wh, r=radius)
@@ -71,8 +72,7 @@ class NGPGUI:
     def render_cam(self, cam):
         t = time.time()
         directions = get_ray_directions(cam.H, cam.W, cam.K, device='cuda')
-        rays_o, rays_d = \
-            get_rays(directions, torch.cuda.FloatTensor(cam.pose))
+        rays_o, rays_d = get_rays(directions, torch.cuda.FloatTensor(cam.pose))
 
         # TODO: set these attributes by gui
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
@@ -83,6 +83,7 @@ class NGPGUI:
                          **{'test_time': True,
                             'to_cpu': True, 'to_numpy': True,
                             'T_threshold': 1e-2,
+                            'exposure': torch.cuda.FloatTensor([dpg.get_value('_exposure')]),
                             'max_samples': 100,
                             'exp_step_factor': exp_step_factor})
 
@@ -120,21 +121,28 @@ class NGPGUI:
 
         ## control window ##
         with dpg.window(label="Control", tag="_control_window", width=200, height=150):
-            with dpg.collapsing_header(label="Info", default_open=True):
-                dpg.add_button(label="show depth", tag="_button_depth",
-                               callback=callback_depth)
-                dpg.add_separator()
-                dpg.add_text('no data', tag="_log_time")
-                dpg.add_text('no data', tag="_samples_per_ray")
+            dpg.add_slider_float(label="exposure", default_value=0.2,
+                                 min_value=1/60, max_value=32, tag="_exposure")
+            dpg.add_button(label="show depth", tag="_button_depth",
+                            callback=callback_depth)
+            dpg.add_separator()
+            dpg.add_text('no data', tag="_log_time")
+            dpg.add_text('no data', tag="_samples_per_ray")
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
+            if not dpg.is_item_focused("_primary_window"):
+                return
             self.cam.orbit(app_data[1], app_data[2])
 
         def callback_camera_wheel_scale(sender, app_data):
+            if not dpg.is_item_focused("_primary_window"):
+                return
             self.cam.scale(app_data)
 
         def callback_camera_drag_pan(sender, app_data):
+            if not dpg.is_item_focused("_primary_window"):
+                return
             self.cam.pan(app_data[1], app_data[2])
 
         with dpg.handler_registry():

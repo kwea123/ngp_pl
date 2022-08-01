@@ -92,7 +92,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
 
         sigmas = torch.zeros(len(xyzs), device=device)
         rgbs = torch.zeros(len(xyzs), 3, device=device)
-        _sigmas, _rgbs = model(xyzs[valid_mask], dirs[valid_mask])
+        _sigmas, _rgbs = model(xyzs[valid_mask], dirs[valid_mask], **kwargs)
         sigmas[valid_mask], rgbs[valid_mask] = _sigmas.float(), _rgbs.float()
         sigmas = rearrange(sigmas, '(n1 n2) -> n1 n2', n2=N_samples)
         rgbs = rearrange(rgbs, '(n1 n2) c -> n1 n2 c', n2=N_samples)
@@ -139,9 +139,12 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
             exp_step_factor, model.grid_size, MAX_SAMPLES)
     results['total_samples'] = total_samples
 
-    sigmas, rgbs = model(xyzs, dirs)
+    for k, v in kwargs.items(): # supply additional inputs, repeated per ray
+        if isinstance(v, torch.Tensor):
+            kwargs[k] = torch.repeat_interleave(v[rays_a[:, 0]], rays_a[:, 2], 0)
+    sigmas, rgbs = model(xyzs, dirs, **kwargs)
 
-    results['opacity'], results['depth'], results['depth_sq'], results['rgb'] = \
+    results['opacity'], results['depth'], _, results['rgb'] = \
         VolumeRenderer.apply(sigmas, rgbs.contiguous(), deltas, ts,
                              rays_a, kwargs.get('T_threshold', 1e-4))
 
