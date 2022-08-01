@@ -89,10 +89,8 @@ class NSVFDataset(BaseDataset):
                 c2w[:, 3] /= 2*self.scale # to bound the scene inside [-0.5, 0.5]
                 self.poses += [c2w]
 
-                img = Image.open(img)
-                img = img.resize(self.img_wh, Image.LANCZOS)
-                img = self.transform(img) # (c, h, w)
-                img = rearrange(img, 'c h w -> (h w) c')
+                img = Image.open(img).resize(self.img_wh, Image.LANCZOS)
+                img = rearrange(self.transform(img), 'c h w -> (h w) c')
                 if 'Jade' in self.root_dir or 'Fountain' in self.root_dir:
                     # these scenes have black background, changing to white
                     img[torch.all(img<=0.1, dim=-1)] = 1.0

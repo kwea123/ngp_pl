@@ -52,10 +52,8 @@ class NeRFPPDataset(BaseDataset):
             for img, pose in tqdm(zip(imgs, poses)):
                 self.poses += [np.loadtxt(pose).reshape(4, 4)[:3]]
 
-                img = Image.open(img).convert('RGB')
-                img = img.resize(self.img_wh, Image.LANCZOS)
-                img = self.transform(img) # (c, h, w)
-                img = rearrange(img, 'c h w -> (h w) c')
+                img = Image.open(img).convert('RGB').resize(self.img_wh, Image.LANCZOS)
+                img = rearrange(self.transform(img), 'c h w -> (h w) c')
 
                 self.rays += [img]
 
