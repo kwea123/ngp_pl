@@ -99,11 +99,11 @@ def normalize(v):
     return v/np.linalg.norm(v)
 
 
-def average_poses(poses, pts3d):
+def average_poses(poses, pts3d=None):
     """
     Calculate the average pose, which is then used to center all poses
     using @center_poses. Its computation is as follows:
-    1. Compute the center: the average of 3d point cloud.
+    1. Compute the center: the average of 3d point cloud (if None, center of cameras).
     2. Compute the z axis: the normalized average z axis.
     3. Compute axis y': the average y axis.
     4. Compute x' = y' cross product z, then normalize it as the x axis.
@@ -119,7 +119,10 @@ def average_poses(poses, pts3d):
         pose_avg: (3, 4) the average pose
     """
     # 1. Compute the center
-    center = pts3d.mean(0)
+    if pts3d is not None:
+        center = pts3d.mean(0)
+    else:
+        center = poses[..., 3].mean(0)
 
     # 2. Compute the z axis
     z = normalize(poses[..., 2].mean(0)) # (3)
@@ -138,7 +141,7 @@ def average_poses(poses, pts3d):
     return pose_avg
 
 
-def center_poses(poses, pts3d):
+def center_poses(poses, pts3d=None):
     """
     See https://github.com/bmild/nerf/issues/34
     Inputs:
@@ -162,10 +165,11 @@ def center_poses(poses, pts3d):
     poses_centered = pose_avg_inv @ poses_homo # (N_images, 4, 4)
     poses_centered = poses_centered[:, :3] # (N_images, 3, 4)
 
-    pts3d_centered = pts3d @ pose_avg_inv[:, :3].T + pose_avg_inv[:, 3:].T
+    if pts3d is not None:
+        pts3d_centered = pts3d @ pose_avg_inv[:, :3].T + pose_avg_inv[:, 3:].T
+        return poses_centered, pts3d_centered
 
-    return poses_centered, pts3d_centered
-
+    return poses_centered
 
 def create_spheric_poses(radius, mean_h, n_poses=120):
     """

@@ -37,7 +37,7 @@ from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.distributed import all_gather_ddp_if_available
 
-from utils import slim_ckpt
+from utils import slim_ckpt, load_ckpt
 
 import warnings; warnings.filterwarnings("ignore")
 
@@ -55,7 +55,8 @@ class NeRFSystem(LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
-        self.S = 16 # the interval to update density grid
+        self.warmup_steps = 256
+        self.update_interval = 16
 
         self.loss = NeRFLoss()
         self.train_psnr = PeakSignalNoiseRatio(data_range=1)
@@ -66,7 +67,8 @@ class NeRFSystem(LightningModule):
             for p in self.val_lpips.net.parameters():
                 p.requires_grad = False
 
-        self.model = NGP(scale=self.hparams.scale)
+        rgb_act = 'None' if self.hparams.use_exposure else 'Sigmoid'
+        self.model = NGP(scale=self.hparams.scale, rgb_act=rgb_act)
         G = self.model.grid_size
         self.model.register_buffer('density_grid',
             torch.zeros(self.model.cascades, G**3))
@@ -93,6 +95,8 @@ class NeRFSystem(LightningModule):
                   'random_bg': self.hparams.random_bg}
         if self.hparams.dataset_name in ['colmap', 'nerfpp']:
             kwargs['exp_step_factor'] = 1/256
+        if self.hparams.use_exposure:
+            kwargs['exposure'] = batch['exposure']
 
         return render(self.model, rays_o, rays_d, **kwargs)
 
@@ -102,6 +106,7 @@ class NeRFSystem(LightningModule):
                   'downsample': self.hparams.downsample}
         self.train_dataset = dataset(split=self.hparams.split, **kwargs)
         self.train_dataset.batch_size = self.hparams.batch_size
+        self.train_dataset.ray_sampling_strategy = self.hparams.ray_sampling_strategy
 
         self.test_dataset = dataset(split='test', **kwargs)
 
@@ -117,10 +122,12 @@ class NeRFSystem(LightningModule):
             self.register_parameter('dT',
                 nn.Parameter(torch.zeros(N, 3, device=self.device)))
 
+        load_ckpt(self.model, self.hparams.weight_path)
+
         net_params = []
         for n, p in self.named_parameters():
             if n not in ['dR', 'dT']: net_params += [p]
-        
+
         opts = []
         self.net_opt = FusedAdam(net_params, self.hparams.lr, eps=1e-15)
         opts += [self.net_opt]
@@ -154,13 +161,19 @@ class NeRFSystem(LightningModule):
                                         self.train_dataset.img_wh)
 
     def training_step(self, batch, batch_nb, *args):
-        if self.global_step%self.S == 0:
+        if self.global_step%self.update_interval == 0:
             self.model.update_density_grid(0.01*MAX_SAMPLES/3**0.5,
-                                           warmup=self.global_step<256,
+                                           warmup=self.global_step<self.warmup_steps,
                                            erode=self.hparams.dataset_name=='colmap')
 
         results = self(batch, split='train')
         loss_d = self.loss(results, batch)
+        if self.hparams.use_exposure:
+            zero_radiance = torch.zeros(1, 3, device=self.device)
+            unit_exposure_rgb = self.model.log_radiance_to_rgb(zero_radiance,
+                                    **{'exposure': torch.ones(1, 1, device=self.device)})
+            loss_d['unit_exposure'] = \
+                0.5*(unit_exposure_rgb-self.train_dataset.unit_exposure_rgb)**2
         loss = sum(lo.mean() for lo in loss_d.values())
 
         with torch.no_grad():

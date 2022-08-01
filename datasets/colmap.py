@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import os
+import glob
 from PIL import Image
 from einops import rearrange
 from tqdm import tqdm
@@ -19,7 +20,7 @@ class ColmapDataset(BaseDataset):
         self.read_intrinsics()
 
         if kwargs.get('read_meta', True):
-            self.read_meta(split)
+            self.read_meta(split, **kwargs)
 
     def read_intrinsics(self):
         # Step 1: read and scale intrinsics (same for all images)
@@ -44,10 +45,11 @@ class ColmapDataset(BaseDataset):
                                     [0,  0,  1]])
         self.directions = get_ray_directions(h, w, self.K)
 
-    def read_meta(self, split):
+    def read_meta(self, split, **kwargs):
         # Step 2: correct poses
         # read extrinsics (of successfully reconstructed images)
         imdata = read_images_binary(os.path.join(self.root_dir, 'sparse/0/images.bin'))
+        # TODO: modify here to read different exposure images for HDRnerf
         img_names = [imdata[k].name for k in imdata]
         perm = np.argsort(img_names)
         if '360_v2' in self.root_dir and self.downsample<1: # mipnerf360 data
@@ -81,21 +83,75 @@ class ColmapDataset(BaseDataset):
             self.poses = torch.FloatTensor(self.poses)
             return
 
-        # use every 8th image as test set
-        if split=='train':
-            img_paths = [x for i, x in enumerate(img_paths) if i%8!=0]
-            self.poses = np.array([x for i, x in enumerate(self.poses) if i%8!=0])
-        elif split=='test':
-            img_paths = [x for i, x in enumerate(img_paths) if i%8==0]
-            self.poses = np.array([x for i, x in enumerate(self.poses) if i%8==0])
+        if 'HDR-NeRF' in self.root_dir: # HDR-NeRF data
+            if 'syndata' in self.root_dir: # synthetic
+                # first 17 are test, last 18 are train
+                self.unit_exposure_rgb = 0.73
+                if split=='train':
+                    img_paths = sorted(glob.glob(os.path.join(self.root_dir,
+                                                            f'train/*[024].png')))
+                    self.poses = np.repeat(self.poses[-18:], 3, 0)
+                elif split=='test':
+                    img_paths = sorted(glob.glob(os.path.join(self.root_dir,
+                                                            f'test/*[13].png')))
+                    self.poses = np.repeat(self.poses[:17], 2, 0)
+            else: # real
+                self.unit_exposure_rgb = 0.5
+                # even numbers are train, odd numbers are test
+                if split=='train':
+                    img_paths = sorted(glob.glob(os.path.join(self.root_dir,
+                                                    f'input_images/*0.jpg')))[::2]
+                    img_paths+= sorted(glob.glob(os.path.join(self.root_dir,
+                                                    f'input_images/*2.jpg')))[::2]
+                    img_paths+= sorted(glob.glob(os.path.join(self.root_dir,
+                                                    f'input_images/*4.jpg')))[::2]
+                    self.poses = np.tile(self.poses[::2], (3, 1, 1))
+                elif split=='test':
+                    img_paths = sorted(glob.glob(os.path.join(self.root_dir,
+                                                    f'input_images/*1.jpg')))[1::2]
+                    img_paths+= sorted(glob.glob(os.path.join(self.root_dir,
+                                                    f'input_images/*3.jpg')))[1::2]
+                    self.poses = np.tile(self.poses[1::2], (2, 1, 1))
+        else:
+            # use every 8th image as test set
+            if split=='train':
+                img_paths = [x for i, x in enumerate(img_paths) if i%8!=0]
+                self.poses = np.array([x for i, x in enumerate(self.poses) if i%8!=0])
+            elif split=='test':
+                img_paths = [x for i, x in enumerate(img_paths) if i%8==0]
+                self.poses = np.array([x for i, x in enumerate(self.poses) if i%8==0])
 
         print(f'Loading {len(img_paths)} {split} images ...')
         for img_path in tqdm(img_paths):
-            img = Image.open(img_path).convert('RGB')
-            img = img.resize(self.img_wh, Image.LANCZOS)
-            img = self.transform(img) # (c, h, w)
-            img = rearrange(img, 'c h w -> (h w) c')
-            self.rays += [img]
+            buf = [] # buffer for ray attributes: rgb, etc
+
+            img = Image.open(img_path).convert('RGB').resize(self.img_wh, Image.LANCZOS)
+            img = rearrange(self.transform(img), 'c h w -> (h w) c')
+            buf += [img]
+
+            if 'HDR-NeRF' in self.root_dir: # get exposure
+                folder = self.root_dir.split('/')
+                scene = folder[-1] if folder[-1] != '' else folder[-2]
+                if scene in ['bathroom', 'bear', 'chair', 'desk']:
+                    e_dict = {e: 1/8*4**e for e in range(5)}
+                elif scene in ['diningroom', 'dog']:
+                    e_dict = {e: 1/16*4**e for e in range(5)}
+                elif scene in ['sofa']:
+                    e_dict = {0:0.25, 1:1, 2:2, 3:4, 4:16}
+                elif scene in ['sponza']:
+                    e_dict = {0:0.5, 1:2, 2:4, 3:8, 4:32}
+                elif scene in ['box']:
+                    e_dict = {0:2/3, 1:1/3, 2:1/6, 3:0.1, 4:0.05}
+                elif scene in ['computer']:
+                    e_dict = {0:1/3, 1:1/8, 2:1/15, 3:1/30, 4:1/60}
+                elif scene in ['flower']:
+                    e_dict = {0:1/3, 1:1/6, 2:0.1, 3:0.05, 4:1/45}
+                elif scene in ['luckycat']:
+                    e_dict = {0:2, 1:1, 2:0.5, 3:0.25, 4:0.125}
+                e = int(img_path.split('.')[0][-1])
+                buf += [e_dict[e]*torch.ones_like(img[:, :1])]
+
+            self.rays += [torch.cat(buf, 1)]
 
         self.rays = torch.stack(self.rays) # (N_images, hw, ?)
         self.poses = torch.FloatTensor(self.poses) # (N_images, 3, 4)
