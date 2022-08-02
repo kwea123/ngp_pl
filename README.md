@@ -60,13 +60,15 @@ For custom data, run `colmap` and get a folder `sparse/0` under which there are 
   *  [mipnerf360 data](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip)
   *  [HDR-NeRF data](https://drive.google.com/drive/folders/1OTDLLH8ydKX1DcaNpbQ46LlP0dKx6E-I). Additionally, download my colmap pose estimation from [here](https://drive.google.com/file/d/1TXxgf_ZxNB4o67FVD_r0aBUIZVRgZYMX/view?usp=sharing) and extract to the same location.
 
+4. RTMV data
+
+Download data from [here](http://www.cs.umd.edu/~mmeshry/projects/rtmv/). To convert the hdr images into ldr images for training, run `python misc/prepare_rtmv.py <path/to/RTMV>`, it will create `images/` folder under each scene folder, and will use these images to train (and test).
+
 # :key: Training
 
 Quickstart: `python train.py --root_dir <path/to/lego> --exp_name Lego`
 
 It will train the Lego scene for 30k steps (each step with 8192 rays), and perform one testing at the end. The training process should finish within about 5 minutes (saving testing image is slow, add `--no_save_test` to disable). Testing PSNR will be shown at the end.
-
-<!-- If your GPU has larger memory, you can try increasing `batch_size` (and `lr`) and reducing `num_epochs` (e.g. `--batch_size 16384 --lr 2e-2 --num_epochs 20`). In my experiments, this further reduces the training time by 10~25s while maintaining the same quality. -->
 
 More options can be found in [opt.py](opt.py).
 

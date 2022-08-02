@@ -3,10 +3,10 @@ import glob
 import numpy as np
 import os
 from PIL import Image
-from einops import rearrange
 from tqdm import tqdm
 
 from .ray_utils import get_ray_directions
+from .color_utils import read_image
 
 from .base import BaseDataset
 
@@ -40,22 +40,20 @@ class NeRFPPDataset(BaseDataset):
             self.poses = [np.loadtxt(p).reshape(4, 4)[:3] for p in poses_path]
         else:
             if split=='trainval':
-                imgs = sorted(glob.glob(os.path.join(self.root_dir, 'train/rgb/*')))+\
-                       sorted(glob.glob(os.path.join(self.root_dir, 'val/rgb/*')))
+                img_paths = sorted(glob.glob(os.path.join(self.root_dir, 'train/rgb/*')))+\
+                            sorted(glob.glob(os.path.join(self.root_dir, 'val/rgb/*')))
                 poses = sorted(glob.glob(os.path.join(self.root_dir, 'train/pose/*.txt')))+\
                        sorted(glob.glob(os.path.join(self.root_dir, 'val/pose/*.txt')))
             else:
-                imgs = sorted(glob.glob(os.path.join(self.root_dir, split, 'rgb/*')))
+                img_paths = sorted(glob.glob(os.path.join(self.root_dir, split, 'rgb/*')))
                 poses = sorted(glob.glob(os.path.join(self.root_dir, split, 'pose/*.txt')))
 
-            print(f'Loading {len(imgs)} {split} images ...')
-            for img, pose in tqdm(zip(imgs, poses)):
+            print(f'Loading {len(img_paths)} {split} images ...')
+            for img_path, pose in tqdm(zip(img_paths, poses)):
                 self.poses += [np.loadtxt(pose).reshape(4, 4)[:3]]
 
-                img = Image.open(img).convert('RGB').resize(self.img_wh, Image.LANCZOS)
-                img = rearrange(self.transform(img), 'c h w -> (h w) c')
-
+                img = read_image(img_path, self.img_wh)
                 self.rays += [img]
 
-            self.rays = torch.stack(self.rays) # (N_images, hw, ?)
+            self.rays = torch.FloatTensor(np.stack(self.rays)) # (N_images, hw, ?)
         self.poses = torch.FloatTensor(self.poses) # (N_images, 3, 4)

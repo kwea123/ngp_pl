@@ -2,11 +2,10 @@ import torch
 import glob
 import numpy as np
 import os
-from PIL import Image
-from einops import rearrange
 from tqdm import tqdm
 
 from .ray_utils import get_ray_directions
+from .color_utils import read_image
 
 from .base import BaseDataset
 
@@ -79,25 +78,22 @@ class NSVFDataset(BaseDataset):
             elif 'Synthetic' in self.root_dir: prefix = '2_' # test set for synthetic scenes
             elif split == 'test': prefix = '1_' # test set for real scenes
             else: raise ValueError(f'{split} split not recognized!')
-            imgs = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
+            img_paths = sorted(glob.glob(os.path.join(self.root_dir, 'rgb', prefix+'*.png')))
             poses = sorted(glob.glob(os.path.join(self.root_dir, 'pose', prefix+'*.txt')))
 
-            print(f'Loading {len(imgs)} {split} images ...')
-            for img, pose in tqdm(zip(imgs, poses)):
+            print(f'Loading {len(img_paths)} {split} images ...')
+            for img_path, pose in tqdm(zip(img_paths, poses)):
                 c2w = np.loadtxt(pose)[:3]
                 c2w[:, 3] -= self.shift
                 c2w[:, 3] /= 2*self.scale # to bound the scene inside [-0.5, 0.5]
                 self.poses += [c2w]
 
-                img = Image.open(img).resize(self.img_wh, Image.LANCZOS)
-                img = rearrange(self.transform(img), 'c h w -> (h w) c')
+                img = read_image(img_path, self.img_wh)
                 if 'Jade' in self.root_dir or 'Fountain' in self.root_dir:
                     # these scenes have black background, changing to white
                     img[torch.all(img<=0.1, dim=-1)] = 1.0
-                if img.shape[-1] == 4:
-                    img = img[:, :3]*img[:, -1:]+(1-img[:, -1:]) # blend A to RGB
 
                 self.rays += [img]
 
-            self.rays = torch.stack(self.rays) # (N_images, hw, ?)
+            self.rays = torch.FloatTensor(np.stack(self.rays)) # (N_images, hw, ?)
         self.poses = torch.FloatTensor(self.poses) # (N_images, 3, 4)

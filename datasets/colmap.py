@@ -2,11 +2,10 @@ import torch
 import numpy as np
 import os
 import glob
-from PIL import Image
-from einops import rearrange
 from tqdm import tqdm
 
 from .ray_utils import *
+from .color_utils import read_image
 from .colmap_utils import \
     read_cameras_binary, read_images_binary, read_points3d_binary
 
@@ -128,9 +127,8 @@ class ColmapDataset(BaseDataset):
         for img_path in tqdm(img_paths):
             buf = [] # buffer for ray attributes: rgb, etc
 
-            img = Image.open(img_path).convert('RGB').resize(self.img_wh, Image.LANCZOS)
-            img = rearrange(self.transform(img), 'c h w -> (h w) c')
-            buf += [img]
+            img = read_image(img_path, self.img_wh)
+            buf += [torch.FloatTensor(img)]
 
             if 'HDR-NeRF' in self.root_dir: # get exposure
                 folder = self.root_dir.split('/')

@@ -1,4 +1,3 @@
-from torchvision import transforms as T
 from torch.utils.data import Dataset
 import numpy as np
 
@@ -11,13 +10,9 @@ class BaseDataset(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.downsample = downsample
-        self.define_transforms()
 
     def read_intrinsics(self):
         raise NotImplementedError
-
-    def define_transforms(self):
-        self.transform = T.ToTensor()
 
     def __len__(self):
         if self.split.startswith('train'):
