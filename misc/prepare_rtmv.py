@@ -17,7 +17,6 @@ if __name__ == '__main__':
     envs = sorted(os.listdir(root_dir))
     print('Generating ldr images from hdr images ...')
     for env in tqdm(envs):
-        if env != 'amazon_berkely': continue
         for scene in tqdm(sorted(os.listdir(os.path.join(root_dir, env)))):
             os.makedirs(os.path.join(root_dir, env, scene, 'images'), exist_ok=True)
             for i, img_p in enumerate(tqdm(sorted(glob.glob(os.path.join(root_dir, env, scene, '*[0-9].exr'))))):
