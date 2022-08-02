@@ -54,8 +54,6 @@ class NGP(nn.Module):
                 }
             )
 
-        self.sigma_act = TruncExp.apply
-
         self.dir_encoder = \
             tcnn.Encoding(
                 n_input_dims=3,
@@ -103,7 +101,7 @@ class NGP(nn.Module):
         """
         x = (x-self.xyz_min)/(self.xyz_max-self.xyz_min)
         h = self.xyz_encoder(x)
-        sigmas = self.sigma_act(h[:, 0])
+        sigmas = TruncExp.apply(h[:, 0])
         if return_feat: return sigmas, h
         return sigmas
 
@@ -146,7 +144,10 @@ class NGP(nn.Module):
         rgbs = self.rgb_net(torch.cat([d, h], 1))
 
         if self.rgb_act == 'None': # rgbs is log-radiance
-            rgbs = self.log_radiance_to_rgb(rgbs, **kwargs)
+            if kwargs.get('output_radiance', False): # output HDR map
+                rgbs = TruncExp.apply(rgbs)
+            else: # convert to LDR using tonemapper networks
+                rgbs = self.log_radiance_to_rgb(rgbs, **kwargs)
 
         return sigmas, rgbs
 

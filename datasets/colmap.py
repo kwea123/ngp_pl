@@ -49,7 +49,6 @@ class ColmapDataset(BaseDataset):
         # Step 2: correct poses
         # read extrinsics (of successfully reconstructed images)
         imdata = read_images_binary(os.path.join(self.root_dir, 'sparse/0/images.bin'))
-        # TODO: modify here to read different exposure images for HDRnerf
         img_names = [imdata[k].name for k in imdata]
         perm = np.argsort(img_names)
         if '360_v2' in self.root_dir and self.downsample<1: # mipnerf360 data
@@ -95,6 +94,8 @@ class ColmapDataset(BaseDataset):
                     img_paths = sorted(glob.glob(os.path.join(self.root_dir,
                                                             f'test/*[13].png')))
                     self.poses = np.repeat(self.poses[:17], 2, 0)
+                else:
+                    raise ValueError(f"split {split} is invalid for HDR-NeRF!")
             else: # real
                 self.unit_exposure_rgb = 0.5
                 # even numbers are train, odd numbers are test
@@ -112,6 +113,8 @@ class ColmapDataset(BaseDataset):
                     img_paths+= sorted(glob.glob(os.path.join(self.root_dir,
                                                     f'input_images/*3.jpg')))[1::2]
                     self.poses = np.tile(self.poses[1::2], (2, 1, 1))
+                else:
+                    raise ValueError(f"split {split} is invalid for HDR-NeRF!")
         else:
             # use every 8th image as test set
             if split=='train':
