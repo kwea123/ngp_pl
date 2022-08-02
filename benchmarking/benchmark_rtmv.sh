@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # for other environments, change the paths accordingly
+# for amazon_berkely, set scale=1.0
 export ROOT_DIR=/home/ubuntu/hdd/data/RTMV/bricks
 
 python train.py \
