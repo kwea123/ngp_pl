@@ -35,17 +35,29 @@ class NeRFDataset(BaseDataset):
         self.img_wh = (w, h)
 
     def read_meta(self, split):
+        if 'Jrender' in self.root_dir and split=='test':
+            # Jrender is a small dataset used in a competition
+            # https://github.com/Jittor/jrender#%E8%AE%A1%E5%9B%BE%E5%A4%A7%E8%B5%9Bbaseline
+            split = 'val'
         self.rays = []
         self.poses = []
 
         with open(os.path.join(self.root_dir, f"transforms_{split}.json"), 'r') as f:
             meta = json.load(f)
 
+        if 'Easyship' in self.root_dir:
+            pose_radius_scale = 1
+        else:
+            pose_radius_scale = 1.5
+
         print(f'Loading {len(meta["frames"])} {split} images ...')
         for frame in tqdm(meta['frames']):
             c2w = np.array(frame['transform_matrix'])[:3, :4]
-            c2w[:, 1:3] *= -1
-            c2w[:, 3] /= np.linalg.norm(c2w[:, 3])/1.5
+            if 'Jrender' in self.root_dir: # a strange coordinate system
+                c2w[:, :2] *= -1
+            else:
+                c2w[:, 1:3] *= -1 # [right up back] to [right down front]
+            c2w[:, 3] /= np.linalg.norm(c2w[:, 3])/pose_radius_scale
             self.poses += [c2w]
 
             img_path = os.path.join(self.root_dir, f"{frame['file_path']}.png")

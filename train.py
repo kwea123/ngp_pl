@@ -93,7 +93,7 @@ class NeRFSystem(LightningModule):
 
         kwargs = {'test_time': split!='train',
                   'random_bg': self.hparams.random_bg}
-        if self.hparams.dataset_name in ['colmap', 'nerfpp']:
+        if self.hparams.scale > 0.5:
             kwargs['exp_step_factor'] = 1/256
         if self.hparams.use_exposure:
             kwargs['exposure'] = batch['exposure']
