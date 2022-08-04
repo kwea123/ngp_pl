@@ -6,8 +6,8 @@ def get_opts():
     # common args for all datasets
     parser.add_argument('--root_dir', type=str, required=True,
                         help='root directory of dataset')
-    parser.add_argument('--dataset_name', type=str, default='nsvf',
-                        choices=['nerf', 'nsvf', 'colmap', 'nerfpp', 'rtmv'],
+    parser.add_argument('--dataset_name', type=str, default='mgtv',
+                        choices=['mgtv'],
                         help='which dataset to train/test')
     parser.add_argument('--split', type=str, default='train',
                         choices=['train', 'trainval'],
@@ -18,8 +18,6 @@ def get_opts():
     # model parameters
     parser.add_argument('--scale', type=float, default=0.5,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
-    parser.add_argument('--use_exposure', action='store_true', default=False,
-                        help='whether to train in HDR-NeRF setting')
 
     # training options
     parser.add_argument('--batch_size', type=int, default=8192,
@@ -45,8 +43,6 @@ def get_opts():
                         ''')
 
     # validation options
-    parser.add_argument('--eval_lpips', action='store_true', default=False,
-                        help='evaluate lpips metric (consumes more VRAM)')
     parser.add_argument('--val_only', action='store_true', default=False,
                         help='run only validation (need to provide ckpt_path)')
     parser.add_argument('--no_save_test', action='store_true', default=False,

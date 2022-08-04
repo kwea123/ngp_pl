@@ -79,19 +79,21 @@ class NGPGUI:
             exp_step_factor = 1/256
         else: exp_step_factor = 0
 
-        results = render(self.model, rays_o, rays_d,
-                         **{'test_time': True,
-                            'to_cpu': True, 'to_numpy': True,
-                            'T_threshold': 1e-2,
-                            'exposure': torch.cuda.FloatTensor([dpg.get_value('_exposure')]),
-                            'max_samples': 100,
-                            'exp_step_factor': exp_step_factor})
+        kwargs = {'test_time': True,
+                  'to_cpu': True, 'to_numpy': True,
+                  'T_threshold': 1e-2,
+                  'max_samples': 100,
+                  'exp_step_factor': exp_step_factor}
 
+        if self.hparams.use_exposure:
+            kwargs['exposure'] = torch.cuda.FloatTensor([dpg.get_value('_exposure')])
+
+        results = render(self.model, rays_o, rays_d, **kwargs)
         rgb = rearrange(results["rgb"], "(h w) c -> h w c", h=self.H)
         depth = rearrange(results["depth"], "(h w) -> h w", h=self.H)
+        self.mean_samples = results['total_samples']/len(rays_o)
         torch.cuda.synchronize()
         self.dt = time.time()-t
-        self.mean_samples = results['total_samples']/len(rays_o)
 
         if self.img_mode == 0:
             return rgb
@@ -121,8 +123,9 @@ class NGPGUI:
 
         ## control window ##
         with dpg.window(label="Control", tag="_control_window", width=200, height=150):
-            dpg.add_slider_float(label="exposure", default_value=0.2,
-                                 min_value=1/60, max_value=32, tag="_exposure")
+            if self.hparams.use_exposure:
+                dpg.add_slider_float(label="exposure", default_value=0.2,
+                                     min_value=1/60, max_value=1, tag="_exposure")
             dpg.add_button(label="show depth", tag="_button_depth",
                             callback=callback_depth)
             dpg.add_separator()
