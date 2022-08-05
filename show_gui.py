@@ -54,8 +54,7 @@ class OrbitCamera:
 class NGPGUI:
     def __init__(self, hparams, K, img_wh, radius=2.5):
         self.hparams = hparams
-        rgb_act = 'None' if self.hparams.use_exposure else 'Sigmoid'
-        self.model = NGP(scale=hparams.scale, rgb_act=rgb_act).cuda()
+        self.model = NGP(scale=hparams.scale).cuda()
         load_ckpt(self.model, hparams.ckpt_path)
 
         self.cam = OrbitCamera(K, img_wh, r=radius)
@@ -84,9 +83,6 @@ class NGPGUI:
                   'T_threshold': 1e-2,
                   'max_samples': 100,
                   'exp_step_factor': exp_step_factor}
-
-        if self.hparams.use_exposure:
-            kwargs['exposure'] = torch.cuda.FloatTensor([dpg.get_value('_exposure')])
 
         results = render(self.model, rays_o, rays_d, **kwargs)
         rgb = rearrange(results["rgb"], "(h w) c -> h w c", h=self.H)
@@ -123,9 +119,6 @@ class NGPGUI:
 
         ## control window ##
         with dpg.window(label="Control", tag="_control_window", width=200, height=150):
-            if self.hparams.use_exposure:
-                dpg.add_slider_float(label="exposure", default_value=0.2,
-                                     min_value=1/60, max_value=1, tag="_exposure")
             dpg.add_button(label="show depth", tag="_button_depth",
                             callback=callback_depth)
             dpg.add_separator()
@@ -189,6 +182,7 @@ if __name__ == "__main__":
     hparams = get_opts()
     kwargs = {'root_dir': hparams.root_dir,
               'downsample': hparams.downsample,
+              'scene': hparams.scene, 'take': hparams.take,
               'read_meta': False}
     dataset = dataset_dict[hparams.dataset_name](**kwargs)
 

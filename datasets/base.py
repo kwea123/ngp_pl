@@ -15,28 +15,19 @@ class BaseDataset(Dataset):
         raise NotImplementedError
 
     def __len__(self):
-        if self.split.startswith('train'):
-            return 1000
-        return len(self.poses)
+        return 1000
 
     def __getitem__(self, idx):
-        if self.split.startswith('train'):
-            # # training pose is retrieved in train.py
-            # if self.ray_sampling_strategy == 'all_images': # randomly select images
-            #     img_idxs = np.random.choice(len(self.poses), self.batch_size)
-            # elif self.ray_sampling_strategy == 'same_image': # randomly select ONE image
-            #     img_idxs = np.random.choice(len(self.poses), 1)[0]
-            # # randomly select pixels
-            # pix_idxs = np.random.choice(self.img_wh[0]*self.img_wh[1], self.batch_size)
-            # rays = self.rays[img_idxs, pix_idxs]
-            # sample = {'img_idxs': img_idxs, 'pix_idxs': pix_idxs,
-            #           'rgb': rays[:, :3]}
-            # if self.rays.shape[-1] == 4: # HDR-NeRF data
-            #     sample['exposure'] = rays[:, 3:]
-        else:
-            sample = {'pose': self.poses[idx], 'img_idxs': idx}
-            if len(self.rays)>0: # if ground truth available
-                rays = self.rays[idx]
-                sample['rgb'] = rays[:, :3]
+        # uniform from all pixels
+        pix_idxs = np.random.choice(len(self.rays), self.batch_size)
+        rays = self.rays[pix_idxs]
 
+        # bg_idxs = np.random.choice(len(self.rays_bg), int(self.batch_size*0.1))
+        # fg_idxs = np.random.choice(len(self.rays_fg), int(self.batch_size*0.9))
+        # rays = torch.cat([self.rays_bg[bg_idxs], self.rays_fg[fg_idxs]])
+
+        sample = {'rays_o': rays[:, :3],
+                    'rays_d': rays[:, 3:6],
+                    'rgb': rays[:, 6:9],
+                    'alpha': rays[:, 9]}
         return sample

@@ -11,3 +11,4 @@ scipy
 pymcubes
 trimesh
 dearpygui
+connected-components-3d

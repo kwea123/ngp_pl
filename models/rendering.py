@@ -108,12 +108,6 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
     results['rgb'] = rgb
     results['total_samples'] = total_samples # total samples for all rays
 
-    if exp_step_factor==0: # synthetic
-        rgb_bg = torch.ones(3, device=device)
-    else: # real
-        rgb_bg = torch.zeros(3, device=device)
-    results['rgb'] += rgb_bg*rearrange(1-opacity, 'n -> n 1')
-
     return results
 
 
@@ -147,15 +141,5 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     results['opacity'], results['depth'], _, results['rgb'] = \
         VolumeRenderer.apply(sigmas, rgbs.contiguous(), deltas, ts,
                              rays_a, kwargs.get('T_threshold', 1e-4))
-
-    if exp_step_factor==0: # synthetic
-        rgb_bg = torch.ones(3, device=rays_o.device)
-    else: # real
-        if kwargs.get('random_bg', False):
-            rgb_bg = torch.rand(3, device=rays_o.device)
-        else:
-            rgb_bg = torch.zeros(3, device=rays_o.device)
-    results['rgb'] = results['rgb'] + \
-                     rgb_bg*rearrange(1-results['opacity'], 'n -> n 1')
 
     return results
