@@ -35,34 +35,56 @@ class NeRFDataset(BaseDataset):
         self.img_wh = (w, h)
 
     def read_meta(self, split):
-        if 'Jrender' in self.root_dir and split=='test':
-            # Jrender is a small dataset used in a competition
-            # https://github.com/Jittor/jrender#%E8%AE%A1%E5%9B%BE%E5%A4%A7%E8%B5%9Bbaseline
-            split = 'val'
         self.rays = []
         self.poses = []
 
-        with open(os.path.join(self.root_dir, f"transforms_{split}.json"), 'r') as f:
-            meta = json.load(f)
-
-        if 'Easyship' in self.root_dir:
-            pose_radius_scale = 1
+        if split == 'trainval':
+            with open(os.path.join(self.root_dir, "transforms_train.json"), 'r') as f:
+                frames = json.load(f)["frames"]
+            with open(os.path.join(self.root_dir, "transforms_val.json"), 'r') as f:
+                frames+= json.load(f)["frames"]
         else:
-            pose_radius_scale = 1.5
+            with open(os.path.join(self.root_dir, f"transforms_{split}.json"), 'r') as f:
+                frames = json.load(f)["frames"]
 
-        print(f'Loading {len(meta["frames"])} {split} images ...')
-        for frame in tqdm(meta['frames']):
+        print(f'Loading {len(frames)} {split} images ...')
+        for frame in tqdm(frames):
             c2w = np.array(frame['transform_matrix'])[:3, :4]
-            if 'Jrender' in self.root_dir: # a strange coordinate system
-                c2w[:, :2] *= -1
+
+            # determine scale
+            if 'Jrender_Dataset' in self.root_dir:
+                c2w[:, :2] *= -1 # [left up front] to [right down front]
+                folder = self.root_dir.split('/')
+                scene = folder[-1] if folder[-1] != '' else folder[-2]
+                if scene=='Easyship':
+                    pose_radius_scale = 1.2
+                elif scene=='Scar':
+                    pose_radius_scale = 1.8
+                elif scene=='Coffee':
+                    pose_radius_scale = 2.5
+                elif scene=='Car':
+                    pose_radius_scale = 0.8
+                else:
+                    pose_radius_scale = 1.5
             else:
                 c2w[:, 1:3] *= -1 # [right up back] to [right down front]
+                pose_radius_scale = 1.5
             c2w[:, 3] /= np.linalg.norm(c2w[:, 3])/pose_radius_scale
+
+            # add shift
+            if 'Jrender_Dataset' in self.root_dir:
+                if scene=='Coffee':
+                    c2w[1, 3] -= 0.4465
+                elif scene=='Car':
+                    c2w[0, 3] -= 0.7
             self.poses += [c2w]
 
-            img_path = os.path.join(self.root_dir, f"{frame['file_path']}.png")
-            img = read_image(img_path, self.img_wh)
-            self.rays += [img]
+            try:
+                img_path = os.path.join(self.root_dir, f"{frame['file_path']}.png")
+                img = read_image(img_path, self.img_wh)
+                self.rays += [img]
+            except: pass
 
-        self.rays = torch.FloatTensor(np.stack(self.rays)) # (N_images, hw, ?)
+        if len(self.rays)>0:
+            self.rays = torch.FloatTensor(np.stack(self.rays)) # (N_images, hw, ?)
         self.poses = torch.FloatTensor(self.poses) # (N_images, 3, 4)
