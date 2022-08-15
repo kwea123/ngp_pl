@@ -105,7 +105,7 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
 
     results['opacity'] = opacity
     results['depth'] = depth
-    results['rgb'] = rgb
+    results['rgb'] = rgb + kwargs.get('rgb_bg', 0)*rearrange(1-opacity, 'n -> n 1')
     results['total_samples'] = total_samples # total samples for all rays
 
     return results
@@ -123,19 +123,15 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     3. Use volume rendering to combine the result (front to back compositing
        and early stop the ray if its transmittance is below a threshold)
     """
-    exp_step_factor = kwargs.get('exp_step_factor', 0.)
     results = {}
 
     rays_a, xyzs, dirs, deltas, ts, total_samples = \
         RayMarcher.apply(
             rays_o, rays_d, hits_t[:, 0], model.density_bitfield,
             model.cascades, model.scale,
-            exp_step_factor, model.grid_size, MAX_SAMPLES)
+            0., model.grid_size, MAX_SAMPLES)
     results['total_samples'] = total_samples
 
-    for k, v in kwargs.items(): # supply additional inputs, repeated per ray
-        if isinstance(v, torch.Tensor):
-            kwargs[k] = torch.repeat_interleave(v[rays_a[:, 0]], rays_a[:, 2], 0)
     sigmas, rgbs = model(xyzs, dirs, **kwargs)
 
     results['opacity'], results['depth'], _, results['rgb'] = \

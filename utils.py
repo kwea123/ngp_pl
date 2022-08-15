@@ -29,7 +29,7 @@ def load_ckpt(model, ckpt_path, model_name='model', prefixes_to_ignore=[]):
 def slim_ckpt(ckpt_path, save_poses=False):
     ckpt = torch.load(ckpt_path, map_location='cpu')
     # pop unused parameters
-    keys_to_pop = ['directions', 'model.density_grid', 'model.grid_coords']
+    keys_to_pop = ['model.density_grid', 'model.grid_coords']
     if not save_poses: keys_to_pop += ['poses']
     for k in ckpt['state_dict']:
         if k.startswith('val_lpips'):

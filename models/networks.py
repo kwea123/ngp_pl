@@ -3,14 +3,13 @@ from torch import nn
 import tinycudann as tcnn
 import vren
 from .custom_functions import TruncExp
+from einops import repeat
 import numpy as np
 
 
 class NGP(nn.Module):
-    def __init__(self, scale, rgb_act='Sigmoid'):
+    def __init__(self, scale, use_a=False):
         super().__init__()
-
-        self.rgb_act = rgb_act
 
         # scene bounding box
         self.scale = scale
@@ -52,15 +51,30 @@ class NGP(nn.Module):
                 }
             )
 
+        self.dir_encoder = \
+            tcnn.Encoding(
+                n_input_dims=3,
+                encoding_config={
+                    "otype": "SphericalHarmonics",
+                    "degree": 4,
+                },
+            )
+
+        rgb_input_dim = 32
+        self.use_a = use_a
+        if use_a:
+            self.embedding_a = nn.Embedding(92, 32)
+            rgb_input_dim += 32
+
         self.rgb_net = \
             tcnn.Network(
-                n_input_dims=16, n_output_dims=3,
+                n_input_dims=rgb_input_dim, n_output_dims=3,
                 network_config={
                     "otype": "FullyFusedMLP",
                     "activation": "ReLU",
-                    "output_activation": self.rgb_act,
+                    "output_activation": 'Sigmoid',
                     "n_neurons": 64,
-                    "n_hidden_layers": 1,
+                    "n_hidden_layers": 2,
                 }
             )
 
@@ -90,7 +104,14 @@ class NGP(nn.Module):
             rgbs: (N, 3)
         """
         sigmas, h = self.density(x, return_feat=True)
-        rgbs = self.rgb_net(h)
+        d = d/torch.norm(d, dim=1, keepdim=True)
+        d = self.dir_encoder((d+1)/2)
+        inp_list = [d, h]
+        if self.use_a:
+            a_emb = self.embedding_a(kwargs['cam'])
+            a_emb = repeat(a_emb, '1 c -> n c', n=len(h))
+            inp_list += [a_emb]
+        rgbs = self.rgb_net(torch.cat(inp_list, 1))
 
         return sigmas, rgbs
 

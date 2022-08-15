@@ -8,6 +8,7 @@ class NeRFLoss(nn.Module):
     def forward(self, results, target, **kwargs):
         d = {}
         d['rgb'] = (results['rgb']-target['rgb'])**2
+        d['rgb'][target['alpha']>0] *= 5
         d['opacity'] = (results['opacity']-target['alpha'])**2
 
         return d

@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 from opt import get_opts
 import numpy as np
 import cv2
@@ -6,6 +7,7 @@ import cv2
 # data
 from torch.utils.data import DataLoader
 from datasets import dataset_dict
+from datasets.ray_utils import axisangle_to_R, get_rays, get_ray_directions
 
 # models
 from kornia.utils.grid import create_meshgrid3d
@@ -18,18 +20,14 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from losses import NeRFLoss
 
 # metrics
-from torchmetrics import (
-    PeakSignalNoiseRatio, 
-    StructuralSimilarityIndexMeasure
-)
+from torchmetrics import PeakSignalNoiseRatio
 
 # pytorch-lightning
-from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from utils import slim_ckpt, load_ckpt
+from utils import slim_ckpt
 
 import warnings; warnings.filterwarnings("ignore")
 
@@ -52,10 +50,8 @@ class NeRFSystem(LightningModule):
 
         self.loss = NeRFLoss()
         self.train_psnr = PeakSignalNoiseRatio(data_range=1)
-        self.val_psnr = PeakSignalNoiseRatio(data_range=1)
-        self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)
 
-        self.model = NGP(scale=self.hparams.scale, rgb_act='Sigmoid')
+        self.model = NGP(scale=self.hparams.scale, use_a=self.hparams.use_a)
         G = self.model.grid_size
         self.model.register_buffer('density_grid',
             torch.zeros(self.model.cascades, G**3))
@@ -63,9 +59,22 @@ class NeRFSystem(LightningModule):
             create_meshgrid3d(G, G, G, False, dtype=torch.int32).reshape(-1, 3))
 
     def forward(self, batch, split):
-        rays_o, rays_d = batch['rays_o'], batch['rays_d']
+        poses = self.poses[batch['cam']].clone() # (3, 4)
 
-        kwargs = {'test_time': split!='train'}
+        if self.hparams.optimize_ext:
+            dR = axisangle_to_R(self.dR[batch['cam']].unsqueeze(0))[0]
+            poses[..., :3] = dR @ poses[..., :3]
+            poses[..., 3] += self.dT[batch['cam']]
+
+        directions = \
+            get_ray_directions(self.train_dataset.Hs[batch['cam']],
+                               self.train_dataset.Ws[batch['cam']],
+                               self.train_dataset.Ks[batch['cam']],
+                               device=self.device)[batch['pix_idxs']]
+
+        rays_o, rays_d = get_rays(directions, poses)
+
+        kwargs = {'cam': torch.LongTensor([batch['cam']]).to(self.device)}
 
         return render(self.model, rays_o, rays_d, **kwargs)
 
@@ -79,14 +88,30 @@ class NeRFSystem(LightningModule):
         self.train_dataset.batch_size = self.hparams.batch_size
 
     def configure_optimizers(self):
-        load_ckpt(self.model, self.hparams.weight_path)
+        self.register_buffer('poses', self.train_dataset.poses.to(self.device))
 
-        self.net_opt = FusedAdam(self.parameters(), self.hparams.lr, eps=1e-15)
+        if self.hparams.optimize_ext:
+            self.register_parameter('dR',
+                nn.Parameter(torch.zeros(92, 3, device=self.device)))
+            self.register_parameter('dT',
+                nn.Parameter(torch.zeros(92, 3, device=self.device)))
+
+        net_params = []
+        for n, p in self.named_parameters():
+            if n not in ['dR', 'dT']:
+                net_params += [p]
+
+        opts = []
+        self.net_opt = FusedAdam(net_params, self.hparams.lr, eps=1e-15)
+        opts += [self.net_opt]
+        if self.hparams.optimize_ext:
+            opts += [FusedAdam([self.dR, self.dT], 1e-6)]
+
         net_sch = CosineAnnealingLR(self.net_opt,
                                     self.hparams.num_epochs,
                                     self.hparams.lr/30)
 
-        return [self.net_opt], [net_sch]
+        return opts, [net_sch]
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
@@ -145,8 +170,9 @@ if __name__ == '__main__':
                       num_sanity_val_steps=0,
                       precision=16)
 
-    trainer.fit(system, ckpt_path=hparams.ckpt_path)
+    trainer.fit(system)
 
     ckpt_ = \
-        slim_ckpt(f'ckpts/{hparams.dataset_name}/{hparams.scene}/{hparams.take}/epoch={hparams.num_epochs-1}.ckpt')
+        slim_ckpt(f'ckpts/{hparams.dataset_name}/{hparams.scene}/{hparams.take}/epoch={hparams.num_epochs-1}.ckpt',
+                  save_poses=hparams.optimize_ext)
     torch.save(ckpt_, f'ckpts/{hparams.dataset_name}/{hparams.scene}/{hparams.take}/epoch={hparams.num_epochs-1}_slim.ckpt')

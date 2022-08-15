@@ -9,9 +9,8 @@ def get_opts():
     parser.add_argument('--dataset_name', type=str, default='mgtv',
                         help='which dataset to train/test')
     parser.add_argument('--split', type=str, default='val',
-                        choices=['val', 'test_a'],
                         help='use which split to train')
-    parser.add_argument('--downsample', type=float, default=0.5,
+    parser.add_argument('--downsample', type=float, default=1.0,
                         help='downsample factor (<=1.0) for the images')
 
     parser.add_argument('--scene', type=str, default='F1_06')
@@ -22,17 +21,15 @@ def get_opts():
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
 
     # training options
-    parser.add_argument('--batch_size', type=int, default=16384,
+    parser.add_argument('--batch_size', type=int, default=8192,
                         help='number of rays in a batch')
-    parser.add_argument('--num_epochs', type=int, default=5,
+    parser.add_argument('--num_epochs', type=int, default=20,
                         help='number of training epochs')
-    parser.add_argument('--lr', type=float, default=2e-2,
+    parser.add_argument('--lr', type=float, default=1e-2,
                         help='learning rate')
-
-    # misc
-    parser.add_argument('--ckpt_path', type=str, default=None,
-                        help='pretrained checkpoint to load (including optimizers, etc)')
-    parser.add_argument('--weight_path', type=str, default=None,
-                        help='pretrained checkpoint to load (excluding optimizers, etc)')
+    parser.add_argument('--use_a', action='store_true', default=False,
+                        help='whether to use appearance embedding (experimental)')
+    parser.add_argument('--optimize_ext', action='store_true', default=False,
+                        help='whether to optimize extrinsics (experimental)')
 
     return parser.parse_args()

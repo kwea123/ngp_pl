@@ -18,16 +18,12 @@ class BaseDataset(Dataset):
         return 1000
 
     def __getitem__(self, idx):
-        # uniform from all pixels
-        pix_idxs = np.random.choice(len(self.rays), self.batch_size)
-        rays = self.rays[pix_idxs]
+        cam = np.random.choice(list(self.rays.keys()), 1)[0]
+        pix_idxs = np.random.choice(len(self.rays[cam]), self.batch_size)
+        rays = self.rays[cam][pix_idxs]
 
-        # bg_idxs = np.random.choice(len(self.rays_bg), int(self.batch_size*0.1))
-        # fg_idxs = np.random.choice(len(self.rays_fg), int(self.batch_size*0.9))
-        # rays = torch.cat([self.rays_bg[bg_idxs], self.rays_fg[fg_idxs]])
-
-        sample = {'rays_o': rays[:, :3],
-                    'rays_d': rays[:, 3:6],
-                    'rgb': rays[:, 6:9],
-                    'alpha': rays[:, 9]}
+        sample = {'cam': cam,
+                  'pix_idxs': pix_idxs,
+                  'rgb': rays[:, :3],
+                  'alpha': rays[:, 3]}
         return sample

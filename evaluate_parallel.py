@@ -45,7 +45,6 @@ def Evaluate_meta(pred, gt, meth):
 
 def Evaluate(files_gt, files_pred, methods = [PSNR,MSE,SSIM], num_processing=32):
     score = {}
-    print("Evaluate begin") 
 
     for meth in methods:
 
@@ -102,6 +101,9 @@ def evaluate(gt_folder, pred_folder):
             try: 
                 # tic = time.time()
                 image_pred=np.array(Image.open(image_predict_path)).astype(np.uint8)
+                # TODO: do this in testing not here
+                image_pred = cv2.resize(image_pred, 
+                                (image_mask_list[j].shape[1], image_mask_list[j].shape[0]))
                 #apply mask
                 image_pred=cv2.bitwise_and(image_pred, image_pred, mask=image_mask_list[j])
                 image_pred_list.append(image_pred)
