@@ -127,7 +127,7 @@ class ColmapDataset(BaseDataset):
         for img_path in tqdm(img_paths):
             buf = [] # buffer for ray attributes: rgb, etc
 
-            img = read_image(img_path, self.img_wh)
+            img = read_image(img_path, self.img_wh, blend_a=False)
             buf += [torch.FloatTensor(img)]
 
             if 'HDR-NeRF' in self.root_dir: # get exposure
