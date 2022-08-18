@@ -27,7 +27,6 @@ class NGP(nn.Module):
         # constants
         L = 16; F = 2; log2_T = 19; N_min = 16
         b = np.exp(np.log(2048*scale/N_min)/(L-1))
-        print(f'GridEncoding: Nmin={N_min} b={b:.5f} F={F} T=2^{log2_T} L={L}')
 
         self.xyz_encoder = \
             tcnn.NetworkWithInputEncoding(

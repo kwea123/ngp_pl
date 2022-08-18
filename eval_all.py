@@ -1,5 +1,5 @@
 import os
-import cv2
+from tqdm import tqdm
 import torch
 import os
 import numpy as np
@@ -15,14 +15,14 @@ import vren
 
 
 if __name__ == '__main__':
-    root_dir = '/home/ubuntu/hdd/data/mgtv/test_a_'
+    root_dir = '/home/ubuntu/hdd/data/mgtv/test_b_'
 
-    scenes = sorted(os.listdir(root_dir))
-    for scene in scenes:
+    scenes = ['F2_07']#sorted(os.listdir(root_dir))
+    for scene in tqdm(scenes):
         takes = sorted(os.listdir(f'{root_dir}/{scene}'))
-        for take in takes:
-            os.makedirs(f'results/_mgtv/{scene}/{take}', exist_ok=True)
-            with open('/home/ubuntu/hdd/data/mgtv/evaluation_code/test_a_rect.txt', 'r') as f:
+        for take in tqdm(takes):
+            os.makedirs(f'results/mgtv_test_b/{scene}/{take}', exist_ok=True)
+            with open('/home/ubuntu/hdd/data/mgtv/evaluation_code/test_b_rect.txt', 'r') as f:
                 lines = f.readlines()
             crop_dict = {}
             for line in lines:
@@ -32,18 +32,11 @@ if __name__ == '__main__':
                 scene_, take_, filename_ = filename.split('/')
                 if scene_==scene and take_==take[:6]:
                     cam = int(filename_[9:11])-1
-                    # if w%2==1: w -= 1
-                    # if h%2==1: h -= 1
-                    # img = imageio.imread(
-                    #     os.path.join('/home/ubuntu/hdd/data/mgtv/val_crop_gt', filename))
-                    # img = cv2.resize(img, (w, h))
-                    # imageio.imsave(os.path.join('/home/ubuntu/hdd/data/mgtv/gan/gt', f'{scene}_{take}_'+filename.split('/')[-1]), img)
-                    crop_dict[cam] = (int(x)//2, int(y)//2, int(w)//2, int(h)//2)
+                    crop_dict[cam] = (int(x), int(y), w, h)
 
             dataset = dataset_dict['mgtv'](
                 '/home/ubuntu/hdd/data/mgtv', scene=scene, take=take,
-                split='test', downsample=0.5
-            )
+                split='test', downsample=1.0)
 
             model = NGP(scale=0.5, use_a=scene[0]=='F').cuda()
             load_ckpt(model, f'ckpts/mgtv/{scene}/{take}/epoch=19_slim.ckpt')
@@ -74,22 +67,25 @@ if __name__ == '__main__':
                 density_bitfield[:, i] = _density_bitfield & torch.tensor([2**i], device='cuda')
             density_bitfield = density_bitfield.reshape(model.cascades, G**3).cpu()
 
-            for cam in range(92):
-                directions = get_ray_directions(dataset.Hs[cam], dataset.Ws[cam], dataset.Ks[cam], flatten=False)
+            for cam in tqdm(range(92)):
+                directions = \
+                    get_ray_directions(dataset.Hs[cam],
+                                       dataset.Ws[cam],
+                                       dataset.Ks[cam],
+                                       flatten=False)
                 if cam in crop_dict:
                     x, y, w, h = crop_dict[cam]
                     directions = directions[y:y+h, x:x+w]
-                else:
-                    continue
+                else: continue
                 directions = directions.reshape(-1, 3)
                 rays_o, rays_d = get_rays(directions.cuda(), dataset.poses[cam].cuda())
                 
                 results = render(model, rays_o, rays_d, 
-                                **{'test_time': True, 'cam': torch.cuda.LongTensor([0])})
+                                **{'test_time': True,
+                                   'cam': torch.cuda.LongTensor([0])})
 
                 pred = results['rgb'].reshape(h, w, 3).cpu().numpy()
                 pred = (pred*255).astype(np.uint8)
-                imageio.imwrite(f'results/_mgtv/{scene}/{take}/image.cam{cam+1:02d}_{take}.jpg', pred)
-                # imageio.imwrite(f'/home/ubuntu/hdd/data/mgtv/gan/lq/{scene}_{take}_image.cam{cam+1:02d}_{take}.jpg', pred)
+                imageio.imwrite(f'results/mgtv_test_b/{scene}/{take}/image.cam{cam+1:02d}_{take}.jpg', pred)
                 
                 torch.cuda.empty_cache()

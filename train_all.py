@@ -3,10 +3,10 @@ import glob
 
 
 if __name__ == '__main__':
-    split = 'test_a_'
+    split = 'test_b_'
     root_dir = f'/home/ubuntu/hdd/data/mgtv/{split}'
 
-    scenes = sorted(os.listdir(root_dir))
+    scenes = ['F2_07']#sorted(os.listdir(root_dir))
     for scene in scenes:
         takes = sorted(os.listdir(f'{root_dir}/{scene}'))
         for take in takes:
@@ -14,19 +14,5 @@ if __name__ == '__main__':
             cmd = 'python train.py --root_dir /home/ubuntu/hdd/data/mgtv'
             cmd += f' --split {split} --scene {scene} --take {take}'
             if scene[0] == 'F':
-                cmd += ' --use_a'
-            if scene == 'F1_06':
-                cmd += ' --optimize_ext'
+                cmd += ' --use_a --optimize_ext'
             os.system(cmd)
-
-    # # copy GT files
-    # root_dir = '/home/ubuntu/hdd/data/mgtv/val_crop_gt'
-
-    # scenes = sorted(os.listdir(root_dir))
-    # for scene in scenes:
-    #     os.makedirs(f'/home/ubuntu/hdd/data/mgtv/gan/{scene}/gt', exist_ok=True)
-    #     takes = sorted(os.listdir(f'{root_dir}/{scene}'))
-    #     for take in takes:
-    #         imgs = sorted(glob.glob(f'{root_dir}/{scene}/{take}/*.jpg'))
-    #         for img in imgs:
-    #             os.system(f'cp {img} /home/ubuntu/hdd/data/mgtv/gan/{scene}/gt/{img.split("/")[-1]}')
