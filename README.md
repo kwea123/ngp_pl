@@ -2,6 +2,8 @@
 
 For [MGTV competition](https://challenge.ai.mgtv.com/contest/detail/15)
 
+9th place solution
+
 # :computer: Installation
 
 ## Hardware
