@@ -2,7 +2,7 @@
 
 For [MGTV competition](https://challenge.ai.mgtv.com/contest/detail/15)
 
-9th place solution
+9th place solution. Design details are in [design.pdf](design.pdf)
 
 # :computer: Installation
 
