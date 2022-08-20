@@ -15,14 +15,16 @@ import vren
 
 
 if __name__ == '__main__':
-    root_dir = '/home/ubuntu/hdd/data/mgtv/test_b_'
+    root_dir = '/home/ubuntu/hdd/data/mgtv'
+    rect_text_path = '/home/ubuntu/hdd/data/mgtv/evaluation_code/test_b_rect.txt'
 
-    scenes = ['F2_07']#sorted(os.listdir(root_dir))
+    split_dir = f'{root_dir}/test_b_'
+    scenes = sorted(os.listdir(split_dir))
     for scene in tqdm(scenes):
-        takes = sorted(os.listdir(f'{root_dir}/{scene}'))
+        takes = sorted(os.listdir(f'{split_dir}/{scene}'))
         for take in tqdm(takes):
             os.makedirs(f'results/mgtv_test_b/{scene}/{take}', exist_ok=True)
-            with open('/home/ubuntu/hdd/data/mgtv/evaluation_code/test_b_rect.txt', 'r') as f:
+            with open(rect_text_path, 'r') as f:
                 lines = f.readlines()
             crop_dict = {}
             for line in lines:
@@ -35,7 +37,7 @@ if __name__ == '__main__':
                     crop_dict[cam] = (int(x), int(y), w, h)
 
             dataset = dataset_dict['mgtv'](
-                '/home/ubuntu/hdd/data/mgtv', scene=scene, take=take,
+                root_dir, scene=scene, take=take,
                 split='test', downsample=1.0)
 
             model = NGP(scale=0.5, use_a=scene[0]=='F').cuda()

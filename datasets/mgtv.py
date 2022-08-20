@@ -49,18 +49,8 @@ class MGTVDataset(BaseDataset):
             w2c = np.eye(4)
             w2c[:3] = np.concatenate([R, T], 1) # (3, 4)
             c2w = np.linalg.inv(w2c)[:3]
-            # special cases
-            if self.scene=='F1_06' and self.take == '000975':
-                pass
-            elif self.scene=='M1_02' and self.take == '000041':
-                pass
-            elif self.scene=='M2_03' and self.take == '000181':
-                pass
-            elif self.scene=='M2_03' and self.take == '000207':
-                pass
-            elif self.scene=='M2_03' and self.take == '000208':
-                pass
-            elif self.scene=='M3_02':
+            if self.scene=='M3_02':
+                # special case, large scene
                 c2w[:, 3] /= 3.3
             else:
                 c2w[:, 3] /= 2
