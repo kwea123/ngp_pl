@@ -128,7 +128,8 @@ class ColmapDataset(BaseDataset):
             buf = [] # buffer for ray attributes: rgb, etc
 
             img = read_image(img_path, self.img_wh, blend_a=False)
-            buf += [torch.FloatTensor(img)]
+            img = torch.FloatTensor(img)
+            buf += [img]
 
             if 'HDR-NeRF' in self.root_dir: # get exposure
                 folder = self.root_dir.split('/')
