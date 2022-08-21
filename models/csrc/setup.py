@@ -13,7 +13,7 @@ sources = glob.glob('*.cpp')+glob.glob('*.cu')
 
 setup(
     name='vren',
-    version='1.0',
+    version='2.0',
     author='kwea123',
     author_email='kwea123@gmail.com',
     description='cuda volume rendering library',

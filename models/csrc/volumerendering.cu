@@ -50,9 +50,7 @@ std::vector<torch::Tensor> composite_train_fw_cu(
     const torch::Tensor rays_a,
     const float T_threshold
 ){
-    const int N_rays = rays_a.size(0);
-    const int N = rays_a[N_rays-1][1].item<int>() + 
-                  rays_a[N_rays-1][2].item<int>(); // total number of sample points
+    const int N_rays = rays_a.size(0), N = sigmas.size(0);
 
     auto opacity = torch::zeros({N_rays}, sigmas.options());
     auto depth = torch::zeros({N_rays}, sigmas.options());

@@ -194,6 +194,43 @@ void composite_test_fw(
 }
 
 
+std::vector<torch::Tensor> distortion_loss_fw(
+    const torch::Tensor ws,
+    const torch::Tensor deltas,
+    const torch::Tensor ts,
+    const torch::Tensor rays_a
+){
+    CHECK_INPUT(ws);
+    CHECK_INPUT(deltas);
+    CHECK_INPUT(ts);
+    CHECK_INPUT(rays_a);
+
+    return distortion_loss_fw_cu(ws, deltas, ts, rays_a);
+}
+
+
+torch::Tensor distortion_loss_bw(
+    const torch::Tensor dL_dloss,
+    const torch::Tensor ws_prefix_sum,
+    const torch::Tensor wts_prefix_sum,
+    const torch::Tensor ws,
+    const torch::Tensor deltas,
+    const torch::Tensor ts,
+    const torch::Tensor rays_a
+){
+    CHECK_INPUT(dL_dloss);
+    CHECK_INPUT(ws_prefix_sum);
+    CHECK_INPUT(wts_prefix_sum);
+    CHECK_INPUT(ws);
+    CHECK_INPUT(deltas);
+    CHECK_INPUT(ts);
+    CHECK_INPUT(rays_a);
+
+    return distortion_loss_bw_cu(dL_dloss, ws_prefix_sum, wts_prefix_sum,
+                                 ws, deltas, ts, rays_a);
+}
+
+
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m){
     m.def("ray_aabb_intersect", &ray_aabb_intersect);
     m.def("ray_sphere_intersect", &ray_sphere_intersect);
@@ -207,5 +244,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m){
     m.def("composite_train_fw", &composite_train_fw);
     m.def("composite_train_bw", &composite_train_bw);
     m.def("composite_test_fw", &composite_test_fw);
+
+    m.def("distortion_loss_fw", &distortion_loss_fw);
+    m.def("distortion_loss_bw", &distortion_loss_bw);
 
 }
