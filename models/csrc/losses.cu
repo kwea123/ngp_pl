@@ -74,8 +74,7 @@ std::vector<torch::Tensor> distortion_loss_fw_cu(
         );
     }));
 
-    auto _loss = 2*ws*(ts*ws_prefix_sum-wts_prefix_sum); // (N)
-    _loss += 1.0f/3*ws*ws*deltas; // add the second term
+    auto _loss = 2*ws*(ts*ws_prefix_sum-wts_prefix_sum) + 1.0f/3*ws*ws*deltas;
 
     auto loss = torch::zeros({N_rays}, ws.options());
 
@@ -111,12 +110,13 @@ __global__ void distortion_loss_bw_kernel(
 
     const scalar_t ws_total = ws_prefix_sum[end_idx]+ws[end_idx];
     const scalar_t wts_total = wts_prefix_sum[end_idx]+ws[end_idx]*ts[end_idx];
-    // fill in dL_dws from start_idx to start_idx+N_samples
+    // fill in dL_dws from start_idx to start_idx+N_samples-1
     for (int s=start_idx; s<=end_idx; s++){
         dL_dws[s] = dL_dloss[ray_idx] * 2 * (
             ts[s]*ws_prefix_sum[s] - wts_prefix_sum[s] +
-            (s==end_idx?(scalar_t)0:
-                        (wts_total-wts_prefix_sum[s+1]-ts[s]*(ws_total-ws_prefix_sum[s+1]))
+            (s==end_idx?
+                (scalar_t)0:
+                (wts_total-wts_prefix_sum[s+1]-ts[s]*(ws_total-ws_prefix_sum[s+1]))
             )
         );
         dL_dws[s] += dL_dloss[ray_idx] * (scalar_t)2/3*ws[s]*deltas[s];
