@@ -130,8 +130,10 @@ std::vector<torch::Tensor> composite_train_bw(
     const torch::Tensor dL_dopacity,
     const torch::Tensor dL_ddepth,
     const torch::Tensor dL_drgb,
+    const torch::Tensor dL_dws,
     const torch::Tensor sigmas,
     const torch::Tensor rgbs,
+    const torch::Tensor ws,
     const torch::Tensor deltas,
     const torch::Tensor ts,
     const torch::Tensor rays_a,
@@ -143,8 +145,10 @@ std::vector<torch::Tensor> composite_train_bw(
     CHECK_INPUT(dL_dopacity);
     CHECK_INPUT(dL_ddepth);
     CHECK_INPUT(dL_drgb);
+    CHECK_INPUT(dL_dws);
     CHECK_INPUT(sigmas);
     CHECK_INPUT(rgbs);
+    CHECK_INPUT(ws);
     CHECK_INPUT(deltas);
     CHECK_INPUT(ts);
     CHECK_INPUT(rays_a);
@@ -153,8 +157,8 @@ std::vector<torch::Tensor> composite_train_bw(
     CHECK_INPUT(rgb);
 
     return composite_train_bw_cu(
-                dL_dopacity, dL_ddepth, dL_drgb,
-                sigmas, rgbs, deltas, ts, rays_a,
+                dL_dopacity, dL_ddepth, dL_drgb, dL_dws,
+                sigmas, rgbs, ws, deltas, ts, rays_a,
                 opacity, depth, rgb, opacity_threshold);
 }
 

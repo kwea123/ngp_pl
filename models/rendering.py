@@ -144,7 +144,7 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
             kwargs[k] = torch.repeat_interleave(v[rays_a[:, 0]], rays_a[:, 2], 0)
     sigmas, rgbs = model(xyzs, dirs, **kwargs)
 
-    results['opacity'], results['depth'], results['rgb'] = \
+    results['opacity'], results['depth'], results['rgb'], results['ws'] = \
         VolumeRenderer.apply(sigmas, rgbs.contiguous(), deltas, ts,
                              rays_a, kwargs.get('T_threshold', 1e-4))
 
