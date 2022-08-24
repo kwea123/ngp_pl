@@ -86,8 +86,7 @@ class NeRFSystem(LightningModule):
         if self.hparams.optimize_ext:
             dR = axisangle_to_R(self.dR[batch['img_idxs']])
             poses[..., :3] = dR @ poses[..., :3]
-            dT = self.dT[batch['img_idxs']]
-            poses[..., 3] += dT
+            poses[..., 3] += self.dT[batch['img_idxs']]
 
         rays_o, rays_d = get_rays(directions, poses)
 
@@ -132,10 +131,7 @@ class NeRFSystem(LightningModule):
         self.net_opt = FusedAdam(net_params, self.hparams.lr, eps=1e-15)
         opts += [self.net_opt]
         if self.hparams.optimize_ext:
-            # learning rate is hard-coded
-            pose_r_opt = FusedAdam([self.dR], 1e-6)
-            pose_t_opt = FusedAdam([self.dT], 1e-6)
-            opts += [pose_r_opt, pose_t_opt]
+            opts += [FusedAdam([self.dR, self.dT], 1e-6)] # learning rate is hard-coded
         net_sch = CosineAnnealingLR(self.net_opt,
                                     self.hparams.num_epochs,
                                     self.hparams.lr/30)
