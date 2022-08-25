@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import tinycudann as tcnn
 import vren
+from einops import rearrange
 from .custom_functions import TruncExp
 import numpy as np
 
@@ -207,7 +208,7 @@ class NGP(nn.Module):
         """
         N_cams = poses.shape[0]
         self.count_grid = torch.zeros_like(self.density_grid)
-        w2c_R = poses[:, :3, :3].mT # (N_cams, 3, 3) batch transpose
+        w2c_R = rearrange(poses[:, :3, :3], 'n a b -> n b a') # (N_cams, 3, 3)
         w2c_T = -w2c_R@poses[:, :3, 3:] # (N_cams, 3, 1)
         cells = self.get_all_cells()
         for c in range(self.cascades):
