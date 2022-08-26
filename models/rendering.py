@@ -132,19 +132,19 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     exp_step_factor = kwargs.get('exp_step_factor', 0.)
     results = {}
 
-    rays_a, xyzs, dirs, results['deltas'], results['ts'], total_samples = \
+    rays_a, xyzs, dirs, results['deltas'], results['ts'], results['rm_samples'] = \
         RayMarcher.apply(
             rays_o, rays_d, hits_t[:, 0], model.density_bitfield,
             model.cascades, model.scale,
             exp_step_factor, model.grid_size, MAX_SAMPLES)
-    results['total_samples'] = total_samples
 
     for k, v in kwargs.items(): # supply additional inputs, repeated per ray
         if isinstance(v, torch.Tensor):
             kwargs[k] = torch.repeat_interleave(v[rays_a[:, 0]], rays_a[:, 2], 0)
     sigmas, rgbs = model(xyzs, dirs, **kwargs)
 
-    results['opacity'], results['depth'], results['rgb'], results['ws'] = \
+    (results['vr_samples'], # volume rendering effective samples
+    results['opacity'], results['depth'], results['rgb'], results['ws']) = \
         VolumeRenderer.apply(sigmas, rgbs.contiguous(), results['deltas'], results['ts'],
                              rays_a, kwargs.get('T_threshold', 1e-4))
     results['rays_a'] = rays_a

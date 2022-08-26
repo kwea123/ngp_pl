@@ -10,6 +10,7 @@ __global__ void composite_train_fw_kernel(
     const torch::PackedTensorAccessor<scalar_t, 1, torch::RestrictPtrTraits, size_t> ts,
     const torch::PackedTensorAccessor64<int64_t, 2, torch::RestrictPtrTraits> rays_a,
     const scalar_t T_threshold,
+    torch::PackedTensorAccessor64<int64_t, 1, torch::RestrictPtrTraits> total_samples,
     torch::PackedTensorAccessor<scalar_t, 1, torch::RestrictPtrTraits, size_t> opacity,
     torch::PackedTensorAccessor<scalar_t, 1, torch::RestrictPtrTraits, size_t> depth,
     torch::PackedTensorAccessor<scalar_t, 2, torch::RestrictPtrTraits, size_t> rgb,
@@ -39,6 +40,7 @@ __global__ void composite_train_fw_kernel(
         if (T <= T_threshold) break; // ray has enough opacity
         samples++;
     }
+    total_samples[ray_idx] = samples;
 }
 
 
@@ -56,6 +58,7 @@ std::vector<torch::Tensor> composite_train_fw_cu(
     auto depth = torch::zeros({N_rays}, sigmas.options());
     auto rgb = torch::zeros({N_rays, 3}, sigmas.options());
     auto ws = torch::zeros({N}, sigmas.options());
+    auto total_samples = torch::zeros({N_rays}, torch::dtype(torch::kLong).device(sigmas.device()));
 
     const int threads = 256, blocks = (N_rays+threads-1)/threads;
 
@@ -68,6 +71,7 @@ std::vector<torch::Tensor> composite_train_fw_cu(
             ts.packed_accessor<scalar_t, 1, torch::RestrictPtrTraits, size_t>(),
             rays_a.packed_accessor64<int64_t, 2, torch::RestrictPtrTraits>(),
             T_threshold,
+            total_samples.packed_accessor64<int64_t, 1, torch::RestrictPtrTraits>(),
             opacity.packed_accessor<scalar_t, 1, torch::RestrictPtrTraits, size_t>(),
             depth.packed_accessor<scalar_t, 1, torch::RestrictPtrTraits, size_t>(),
             rgb.packed_accessor<scalar_t, 2, torch::RestrictPtrTraits, size_t>(),
@@ -75,7 +79,7 @@ std::vector<torch::Tensor> composite_train_fw_cu(
         );
     }));
 
-    return {opacity, depth, rgb, ws};
+    return {total_samples, opacity, depth, rgb, ws};
 }
 
 

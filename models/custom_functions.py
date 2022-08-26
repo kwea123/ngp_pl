@@ -66,7 +66,6 @@ class RayMarcher(torch.autograd.Function):
         exp_step_factor: the exponential factor to scale the steps
         grid_size: int
         max_samples: int
-        mean_samples: int, mean total samples per batch
 
     Outputs:
         rays_a: (N_rays) ray_idx, start_idx, N_samples
@@ -129,6 +128,7 @@ class VolumeRenderer(torch.autograd.Function):
         T_threshold: float, stop the ray if the transmittance is below it
 
     Outputs:
+        total_samples: int, effective samples per ray
         opacity: (N_rays)
         depth: (N_rays)
         rgb: (N_rays, 3)
@@ -137,17 +137,17 @@ class VolumeRenderer(torch.autograd.Function):
     @staticmethod
     @custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, sigmas, rgbs, deltas, ts, rays_a, T_threshold):
-        opacity, depth, rgb, ws = \
+        total_samples, opacity, depth, rgb, ws = \
             vren.composite_train_fw(sigmas, rgbs, deltas, ts,
                                     rays_a, T_threshold)
         ctx.save_for_backward(sigmas, rgbs, deltas, ts, rays_a,
                               opacity, depth, rgb, ws)
         ctx.T_threshold = T_threshold
-        return opacity, depth, rgb, ws
+        return total_samples.sum(), opacity, depth, rgb, ws
 
     @staticmethod
     @custom_bwd
-    def backward(ctx, dL_dopacity, dL_ddepth, dL_drgb, dL_dws):
+    def backward(ctx, dL_dtotal_samples, dL_dopacity, dL_ddepth, dL_drgb, dL_dws):
         sigmas, rgbs, deltas, ts, rays_a, \
         opacity, depth, rgb, ws = ctx.saved_tensors
         dL_dsigmas, dL_drgbs = \
