@@ -128,7 +128,7 @@ class VolumeRenderer(torch.autograd.Function):
         T_threshold: float, stop the ray if the transmittance is below it
 
     Outputs:
-        total_samples: int, effective samples per ray
+        total_samples: int, total effective samples
         opacity: (N_rays)
         depth: (N_rays)
         rgb: (N_rays, 3)
