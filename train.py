@@ -58,7 +58,7 @@ class NeRFSystem(LightningModule):
         self.warmup_steps = 256
         self.update_interval = 16
 
-        self.loss = NeRFLoss()
+        self.loss = NeRFLoss(lambda_distortion=self.hparams.distortion_loss_w)
         self.train_psnr = PeakSignalNoiseRatio(data_range=1)
         self.val_psnr = PeakSignalNoiseRatio(data_range=1)
         self.val_ssim = StructuralSimilarityIndexMeasure(data_range=1)

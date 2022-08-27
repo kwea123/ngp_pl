@@ -3,7 +3,7 @@ import argparse
 def get_opts():
     parser = argparse.ArgumentParser()
 
-    # common args for all datasets
+    # dataset parameters
     parser.add_argument('--root_dir', type=str, required=True,
                         help='root directory of dataset')
     parser.add_argument('--dataset_name', type=str, default='nsvf',
@@ -20,6 +20,13 @@ def get_opts():
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
     parser.add_argument('--use_exposure', action='store_true', default=False,
                         help='whether to train in HDR-NeRF setting')
+
+    # loss parameters
+    parser.add_argument('--distortion_loss_w', type=float, default=0,
+                        help='''weight of distortion loss (see losses.py),
+                        0 to disable (default), to enable,
+                        a good value is 1e-3 for real scene and 1e-2 for synthetic scene
+                        ''')
 
     # training options
     parser.add_argument('--batch_size', type=int, default=8192,
@@ -38,9 +45,9 @@ def get_opts():
                         help='learning rate')
     # experimental training options
     parser.add_argument('--optimize_ext', action='store_true', default=False,
-                        help='whether to optimize extrinsics (experimental)')
+                        help='whether to optimize extrinsics')
     parser.add_argument('--random_bg', action='store_true', default=False,
-                        help='''whether to train with random bg color (real dataset only)
+                        help='''whether to train with random bg color (real scene only)
                         to avoid objects with black color to be predicted as transparent
                         ''')
 

@@ -117,8 +117,8 @@ std::vector<torch::Tensor> distortion_loss_fw_cu(
 
 torch::Tensor distortion_loss_bw_cu(
     const torch::Tensor dL_dloss,
-    const torch::Tensor ws_prefix_sum,
-    const torch::Tensor wts_prefix_sum,
+    const torch::Tensor ws_inclusive_scan,
+    const torch::Tensor wts_inclusive_scan,
     const torch::Tensor ws,
     const torch::Tensor deltas,
     const torch::Tensor ts,
