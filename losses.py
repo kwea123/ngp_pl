@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import vren
+from torch.cuda.amp import custom_fwd, custom_bwd
 
 
 class DistortionLoss(torch.autograd.Function):
@@ -20,6 +21,7 @@ class DistortionLoss(torch.autograd.Function):
         loss: (N_rays)
     """
     @staticmethod
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, ws, deltas, ts, rays_a):
         loss, ws_inclusive_scan, wts_inclusive_scan = \
             vren.distortion_loss_fw(ws, deltas, ts, rays_a)
@@ -27,6 +29,7 @@ class DistortionLoss(torch.autograd.Function):
         return loss
 
     @staticmethod
+    @custom_bwd
     def backward(ctx, dL_dloss):
         ws_inclusive_scan, wts_inclusive_scan, ws, deltas, ts, rays_a = ctx.saved_tensors
         dL_dws = vren.distortion_loss_bw(dL_dloss, ws_inclusive_scan, wts_inclusive_scan,
