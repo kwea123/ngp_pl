@@ -74,6 +74,7 @@ class NSVFDataset(BaseDataset):
         else:
             if split == 'train': prefix = '0_'
             elif split == 'trainval': prefix = '[0-1]_'
+            elif split == 'trainvaltest': prefix = '[0-2]_'
             elif split == 'val': prefix = '1_'
             elif 'Synthetic' in self.root_dir: prefix = '2_' # test set for synthetic scenes
             elif split == 'test': prefix = '1_' # test set for real scenes

@@ -10,7 +10,7 @@ def get_opts():
                         choices=['nerf', 'nsvf', 'colmap', 'nerfpp', 'rtmv'],
                         help='which dataset to train/test')
     parser.add_argument('--split', type=str, default='train',
-                        choices=['train', 'trainval'],
+                        choices=['train', 'trainval', 'trainvaltest'],
                         help='use which split to train')
     parser.add_argument('--downsample', type=float, default=1.0,
                         help='downsample factor (<=1.0) for the images')
