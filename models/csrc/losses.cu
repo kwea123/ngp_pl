@@ -6,13 +6,13 @@
 
 template <typename scalar_t>
 __global__ void prefix_sums_kernel(
-    const scalar_t* ws,
-    const scalar_t* wts,
+    const scalar_t* __restrict__ ws,
+    const scalar_t* __restrict__ wts,
     const torch::PackedTensorAccessor64<int64_t, 2, torch::RestrictPtrTraits> rays_a,
-    scalar_t* ws_inclusive_scan,
-    scalar_t* ws_exclusive_scan,
-    scalar_t* wts_inclusive_scan,
-    scalar_t* wts_exclusive_scan
+    scalar_t* __restrict__ ws_inclusive_scan,
+    scalar_t* __restrict__ ws_exclusive_scan,
+    scalar_t* __restrict__ wts_inclusive_scan,
+    scalar_t* __restrict__ wts_exclusive_scan
 ){
     const int n = blockIdx.x * blockDim.x + threadIdx.x;
     if (n >= rays_a.size(0)) return;
@@ -43,7 +43,7 @@ __global__ void prefix_sums_kernel(
 
 template <typename scalar_t>
 __global__ void distortion_loss_fw_kernel(
-    const scalar_t* _loss,
+    const scalar_t* __restrict__ _loss,
     const torch::PackedTensorAccessor64<int64_t, 2, torch::RestrictPtrTraits> rays_a,
     torch::PackedTensorAccessor<scalar_t, 1, torch::RestrictPtrTraits, size_t> loss
 ){

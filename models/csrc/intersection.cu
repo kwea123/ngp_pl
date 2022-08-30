@@ -28,7 +28,7 @@ __global__ void ray_aabb_intersect_kernel(
     const torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> centers,
     const torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> half_sizes,
     const int max_hits,
-    int* hit_cnt,
+    int* __restrict__ hit_cnt,
     torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> hits_t,
     torch::PackedTensorAccessor64<int64_t, 2, torch::RestrictPtrTraits> hits_voxel_idx
 ){
@@ -127,7 +127,7 @@ __global__ void ray_sphere_intersect_kernel(
     const torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> centers,
     const torch::PackedTensorAccessor32<float, 1, torch::RestrictPtrTraits> radii,
     const int max_hits,
-    int* hit_cnt,
+    int* __restrict__ hit_cnt,
     torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> hits_t,
     torch::PackedTensorAccessor64<int64_t, 2, torch::RestrictPtrTraits> hits_sphere_idx
 ){
