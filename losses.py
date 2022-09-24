@@ -23,13 +23,16 @@ class DistortionLoss(torch.autograd.Function):
     def forward(ctx, ws, deltas, ts, rays_a):
         loss, ws_inclusive_scan, wts_inclusive_scan = \
             vren.distortion_loss_fw(ws, deltas, ts, rays_a)
-        ctx.save_for_backward(ws_inclusive_scan, wts_inclusive_scan, ws, deltas, ts, rays_a)
+        ctx.save_for_backward(ws_inclusive_scan, wts_inclusive_scan,
+                              ws, deltas, ts, rays_a)
         return loss
 
     @staticmethod
     def backward(ctx, dL_dloss):
-        ws_inclusive_scan, wts_inclusive_scan, ws, deltas, ts, rays_a = ctx.saved_tensors
-        dL_dws = vren.distortion_loss_bw(dL_dloss, ws_inclusive_scan, wts_inclusive_scan,
+        (ws_inclusive_scan, wts_inclusive_scan,
+        ws, deltas, ts, rays_a) = ctx.saved_tensors
+        dL_dws = vren.distortion_loss_bw(dL_dloss, ws_inclusive_scan,
+                                         wts_inclusive_scan,
                                          ws, deltas, ts, rays_a)
         return dL_dws, None, None, None
 

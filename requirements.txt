@@ -1,6 +1,6 @@
 einops==0.4.1
 kornia==0.6.5
-pytorch-lightning==1.6.5
+pytorch-lightning==1.7.7
 matplotlib==3.5.2
 opencv-python==4.6.0.66
 lpips
