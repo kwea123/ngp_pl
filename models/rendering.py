@@ -132,7 +132,7 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     exp_step_factor = kwargs.get('exp_step_factor', 0.)
     results = {}
 
-    (results['rays_a'], xyzs, dirs,
+    (rays_a, xyzs, dirs,
     results['deltas'], results['ts'], results['rm_samples']) = \
         RayMarcher.apply(
             rays_o, rays_d, hits_t[:, 0], model.density_bitfield,
@@ -147,7 +147,8 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
     (results['vr_samples'], results['opacity'],
     results['depth'], results['rgb'], results['ws']) = \
         VolumeRenderer.apply(sigmas, rgbs, results['deltas'], results['ts'],
-                             results['rays_a'], kwargs.get('T_threshold', 1e-4))
+                             rays_a, kwargs.get('T_threshold', 1e-4))
+    results['rays_a'] = rays_a
 
     if exp_step_factor==0: # synthetic
         rgb_bg = torch.ones(3, device=rays_o.device)
