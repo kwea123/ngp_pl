@@ -1,6 +1,6 @@
 # ngp_pl
 
-### Advertisement: stay tuned with [my channel](https://www.youtube.com/channel/UC7UlsMUu_gIgpqNGB4SqSwQ), I will upload cuda tutorials recently, and do a stream about this implementation!
+### Advertisement: Check out the latest integrated project [nerfstudio](https://github.com/nerfstudio-project/nerfstudio)! There are a lot of recent improvements on nerf related methods, including instant-ngp that runs 10% faster than the original repo!
 
 <!-- ### Update 2022 July 29th: GUI prototype is available now (see following video)!
 
