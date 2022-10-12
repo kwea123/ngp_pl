@@ -146,7 +146,7 @@ def __render_rays_train(model, rays_o, rays_d, hits_t, **kwargs):
 
     (results['vr_samples'], results['opacity'],
     results['depth'], results['rgb'], results['ws']) = \
-        VolumeRenderer.apply(sigmas, rgbs, results['deltas'], results['ts'],
+        VolumeRenderer.apply(sigmas, rgbs.contiguous(), results['deltas'], results['ts'],
                              rays_a, kwargs.get('T_threshold', 1e-4))
     results['rays_a'] = rays_a
 
