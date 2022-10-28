@@ -177,20 +177,23 @@ class NGP(nn.Module):
                    selected at each cascade
         """
         cells = []
+        indices = []; coords = []
         for c in range(self.cascades):
             # uniform cells
             coords1 = torch.randint(self.grid_size, (M, 3), dtype=torch.int32,
                                     device=self.density_grid.device)
-            indices1 = vren.morton3D(coords1).long()
+            coords += [coords1]
+            indices += [vren.morton3D(coords1).long()]
             # occupied cells
             indices2 = torch.nonzero(self.density_grid[c]>density_threshold)[:, 0]
             if len(indices2)>0:
                 rand_idx = torch.randint(len(indices2), (M,),
                                          device=self.density_grid.device)
                 indices2 = indices2[rand_idx]
-            coords2 = vren.morton3D_invert(indices2.int())
+                indices += [indices2[rand_idx]]
+                coords += [vren.morton3D_invert(indices2.int())]
             # concatenate
-            cells += [(torch.cat([indices1, indices2]), torch.cat([coords1, coords2]))]
+            cells += [(torch.cat(indices), torch.cat(coords))]
 
         return cells
 
