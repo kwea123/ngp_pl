@@ -36,7 +36,7 @@ This implementation has **strict** requirements due to dependencies on other lib
 * Python libraries
     * Install pytorch by `pip install torch==1.11.0 torchvision==0.12.0 --extra-index-url https://download.pytorch.org/whl/cu113`
     * Install `torch-scatter` following their [instruction](https://github.com/rusty1s/pytorch_scatter#installation)
-    * Install `tinycudann` following their [instruction](https://github.com/NVlabs/tiny-cuda-nn#requirements) (compilation and pytorch extension)
+    * Install `tinycudann` following their [instruction](https://github.com/NVlabs/tiny-cuda-nn#pytorch-extension) (pytorch extension)
     * Install `apex` following their [instruction](https://github.com/NVIDIA/apex#linux)
     * Install core requirements by `pip install -r requirements.txt`
 
