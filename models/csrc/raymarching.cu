@@ -17,7 +17,7 @@ inline __host__ __device__ float calc_dt(float t, float exp_step_factor, int max
 // [0.5, 1) -> 1
 // [1, 2) -> 2
 inline __device__ int mip_from_pos(const float x, const float y, const float z, const int cascades) {
-    const float mx = fmaxf(fabsf(x), fmaxf(fabs(y), fabs(z)));
+    const float mx = fmaxf(fabsf(x), fmaxf(fabsf(y), fabsf(z)));
     int exponent; frexpf(mx, &exponent);
     return min(cascades-1, max(0, exponent+1));
 }
