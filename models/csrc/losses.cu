@@ -1,4 +1,6 @@
 #include "utils.h"
+#include <thrust/reduce.h>
+#include <thrust/execution_policy.h>
 #include <thrust/scan.h>
 
 
