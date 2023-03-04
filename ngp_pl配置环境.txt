@@ -1,0 +1,142 @@
+<wsl2前期操作>
+	win11下：
+	商店安装Ubuntu-20.04
+	进入后确认nvidia-smi有效
+
+	更换linux安装位置：
+	关闭Ubuntu
+	打开win终端
+	wsl --export <Ubuntu的名字> <目标地址/名字.tar>
+	wsl --unregister <Ubuntu的名字> 
+	wsl --import Ubuntu-20.04 <想保存的地址/Ubuntu-20.04> <tar所在地址>
+	ubuntu2004 config --default-user <你之前的user名>
+	wsl 启动
+</wsl2前期操作>
+
+sudo apt-get update
+sudo apt-get install gcc
+sudo apt-get install dkms
+
+安装cuda：
+官网选择wsl2-Ubuntu版本的cuda11.3  runfile安装方式
+配置环境变量：
+sudo vim /ect/profile
+末尾添加两行：
+export PATH="/usr/local/cuda-11.3/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda-11.3/lib64:$LD_LIBRARY_PATH"
+保存退出
+source /ect/profile 更新
+nvcc -V 检查是否安装成功
+
+安装Anaconda3
+wget https://repo.anaconda.com/archive/Anaconda3-5.3.0-Linux-x86_64.sh
+bash Anaconda3-5.3.0-Linux-x86_64.sh
+选择自动配置环境后 source ~/.bashrc 激活 
+conda activate 启动anaconda
+conda update conda 更新一下
+
+配置ngp_pl环境,最好不要用conda install
+conda create -n ngp_pl python=3.8
+conda activate ngp_pl
+pip install torch==1.11.0 torchvision==0.12.0 --extra-index-url https://download.pytorch.org/whl/cu113
+进python确认一下：
+python
+>>import torch
+>>torch.cuda.is_available()
+>>exit()
+(***pip装torch一定不能conda install torch-scatter******)
+pip install torch-scatter -f https://data.pyg.org/whl/torch-1.11.0+cu113.html
+需要一定时间
+
+安装tiny-cuda-nn
+https://github.com/NVlabs/tiny-cuda-nn 下载repo
+进入bindings/torch
+python setup.py install
+
+会有报错因为repo里的dependencies/下cutlass和fmt依赖文件缺失
+git上下载cutlass和fmt repo，需要cutlass/include/cutlass cutlass/tools/util fmt/src下的依赖文件
+https://github.com/NVIDIA/cutlass
+https://github.com/fmtlib/fmt
+细则：
+1.将fmt/src复制到tiny-cuda-nn/dependencies/fmt/下
+2.将cutlass/include复制到tiny-cuda-nn/dependencies/cutlass/下
+3.将cutlass/tools/util复制到tiny-cuda-nn/dependencies/cutlass/下
+tiny-cuda-nn
+         |--------dependencies
+                               |--------fmt
+                               |                 |--src
+                               |--------cutlass
+                                                 |---include
+                                                 |---util
+
+<wsl2特别操作>
+	sudo cp /usr/lib/wsl/lib/* /usr/lib           把lcuda之类的库挪过来
+	ld -lcuda --verbose 检查
+</wsl2特别操作>
+
+补全tiny-cuda-nn/dependencies即可安装
+需要一定的时间
+
+安装apex
+pip install packaging
+git clone https://github.com/NVIDIA/apex
+cd apex
+pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+
+每次拉取项目 需在项目根目录执行以下指令：
+pip install models/csrc/
+
+
+<wsl2特别操作>图形界面（没必要）
+	win下载VcXsrv
+
+	sudo apt-get update
+	sudo apt-get upgrade
+	sudo apt install -y xfce4
+
+	进入root用户
+	export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+	startxfce4
+</wsl2特别操作>
+
+<wsl2特别操作>增加共享内存
+	在/mnt/c/User/<$username>/下创建一个.wslconfig文件:
+
+	[wsl2]
+	processors=16
+	memory=32GB
+	swap=32GB
+	重启更新
+	free -mh 查看
+</wsl2特别操作>
+
+wsl中python GUI界面能直接显示出来
+
+sudo apt-get install firefox 安装火狐
+pip install jupyter
+jupyter-notebook 能跳出界面弹窗
+
+Done！
+
+
+cuda11+会出的问题
+Colmap 安装可能问题， 关于METIS_INCLUDE_DIRS
+https://github.com/colmap/colmap/issues/1469
+
+WSL2的Docker 安装非常简便
+https://learn.microsoft.com/zh-cn/windows/wsl/tutorials/wsl-containers
+
+WSL2代理问题
+https://www.jianshu.com/p/dc1418e3673c
+export ALL_PROXY="http://192.168.48.1:10809" （端口和用的梯子有关）
+
+Docker磁盘转移
+https://blog.csdn.net/austindev/article/details/110387609
+
+sudo docker run --gpus all (instead of "--runtime=nvidia") -e NVIDIA_VISIBLE_DEVICES=all -ti -v /mnt/e/Data/Self/room:/data -v /mnt/w/WSL/Desktop/ml-neuman-main/data/smplx:/neuman/data/smplx --entrypoint bash neuman
+
+sudo docker run --gpus all -e NVIDIA_VISIBLE_DEVICES=all -ti -v ~/Data/citron:/data -v ~/ml-neuman-main/data/smplx:/neuman/data/smplx --entrypoint bash neuman
+
+sudo docker run --gpus all -e NVIDIA_VISIBLE_DEVICES=all -ti -v /mnt/e/Data/Self/gta:/data -v /mnt/w/WSL/Desktop/ml-neuman-main/data/smplx:/neuman/data/smplx --entrypoint bash neuman
+
+
