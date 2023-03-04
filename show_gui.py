@@ -133,17 +133,17 @@ class NGPGUI:
             
         ## parameters of croping bbox
         with dpg.window(label="Bbox", tag="_Bbox_window", width=200, height=170, pos=[0,130]):
-            dpg.add_slider_float(label="xmax", default_value=0.5,
+            dpg.add_drag_float(label="xmax", default_value=0.5, speed=self.hparams.scale/100,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
-            dpg.add_slider_float(label="ymax", default_value=0.5,
+            dpg.add_drag_float(label="ymax", default_value=0.5, speed=self.hparams.scale/100,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymax")
-            dpg.add_slider_float(label="zmax", default_value=0.5,
+            dpg.add_drag_float(label="zmax", default_value=0.5, speed=self.hparams.scale/100,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmax")
-            dpg.add_slider_float(label="xmin", default_value=-0.5,
+            dpg.add_drag_float(label="xmin", default_value=-0.5, speed=self.hparams.scale/100,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
-            dpg.add_slider_float(label="ymin", default_value=-0.5,
+            dpg.add_drag_float(label="ymin", default_value=-0.5, speed=self.hparams.scale/100,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
-            dpg.add_slider_float(label="zmin", default_value=-0.5,
+            dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale/100,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
 
         ## register camera handler ##
