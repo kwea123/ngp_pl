@@ -123,28 +123,34 @@ class NGPGUI:
 
         ## control window ##
         with dpg.window(label="Control", tag="_control_window", width=200, height=130):
-            dpg.add_slider_float(label="exposure", default_value=0.2,
-                                 min_value=1/60, max_value=32, tag="_exposure")
-            dpg.add_button(label="show depth", tag="_button_depth",
-                            callback=callback_depth)
-            dpg.add_separator()
-            dpg.add_text('no data', tag="_log_time")
-            dpg.add_text('no data', tag="_samples_per_ray")
+            with dpg.menu_bar():
+                with dpg.menu(label="Main"):
+                    dpg.add_slider_float(label="exposure", default_value=0.2,
+                                         min_value=1 / 60, max_value=32, tag="_exposure")
+                    dpg.add_button(label="show depth", tag="_button_depth",
+                                   callback=callback_depth)
+                    dpg.add_separator()
+                    dpg.add_text('no data', tag="_log_time")
+                    dpg.add_text('no data', tag="_samples_per_ray")
+
+                with dpg.menu(label="Bbox"):
+                    dpg.add_drag_float(label="xmax", default_value=0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
+                    dpg.add_drag_float(label="ymax", default_value=0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymax")
+                    dpg.add_drag_float(label="zmax", default_value=0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmax")
+                    dpg.add_drag_float(label="xmin", default_value=-0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
+                    dpg.add_drag_float(label="ymin", default_value=-0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
+                    dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
+
             
         ## parameters of croping bbox
         with dpg.window(label="Bbox", tag="_Bbox_window", width=200, height=170, pos=[0,130]):
-            dpg.add_drag_float(label="xmax", default_value=0.5, speed=self.hparams.scale/100,
-                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
-            dpg.add_drag_float(label="ymax", default_value=0.5, speed=self.hparams.scale/100,
-                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymax")
-            dpg.add_drag_float(label="zmax", default_value=0.5, speed=self.hparams.scale/100,
-                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmax")
-            dpg.add_drag_float(label="xmin", default_value=-0.5, speed=self.hparams.scale/100,
-                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
-            dpg.add_drag_float(label="ymin", default_value=-0.5, speed=self.hparams.scale/100,
-                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
-            dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale/100,
-                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
+            
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
