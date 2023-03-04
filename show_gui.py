@@ -122,7 +122,7 @@ class NGPGUI:
             self.img_mode = 1-self.img_mode
 
         ## control window ##
-        with dpg.window(label="Control", tag="_control_window", width=200, height=150):
+        with dpg.window(label="Control", tag="_control_window", width=200, height=130):
             dpg.add_slider_float(label="exposure", default_value=0.2,
                                  min_value=1/60, max_value=32, tag="_exposure")
             dpg.add_button(label="show depth", tag="_button_depth",
@@ -132,7 +132,7 @@ class NGPGUI:
             dpg.add_text('no data', tag="_samples_per_ray")
             
         ## parameters of croping bbox
-        with dpg.window(label="Bbox", tag="_Bbox_window", width=200, height=170):
+        with dpg.window(label="Bbox", tag="_Bbox_window", width=200, height=170, pos=[0,130]):
             dpg.add_slider_float(label="xmax", default_value=0.5,
                                  min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
             dpg.add_slider_float(label="ymax", default_value=0.5,
