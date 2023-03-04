@@ -147,11 +147,6 @@ class NGPGUI:
                     dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale/100,
                                          min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
 
-            
-        ## parameters of croping bbox
-        with dpg.window(label="Bbox", tag="_Bbox_window", width=200, height=170, pos=[0,130]):
-            
-
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
             if not dpg.is_item_focused("_primary_window"):

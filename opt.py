@@ -4,9 +4,9 @@ def get_opts():
     parser = argparse.ArgumentParser()
 
     # dataset parameters
-    parser.add_argument('--root_dir', type=str, required=True,
+    parser.add_argument('--root_dir', type=str, default='/mnt/e/Data/ngp_pl_data/recon/',
                         help='root directory of dataset')
-    parser.add_argument('--dataset_name', type=str, default='nsvf',
+    parser.add_argument('--dataset_name', type=str, default='colmap',
                         choices=['nerf', 'nsvf', 'colmap', 'nerfpp', 'rtmv'],
                         help='which dataset to train/test')
     parser.add_argument('--split', type=str, default='train',
@@ -16,7 +16,7 @@ def get_opts():
                         help='downsample factor (<=1.0) for the images')
 
     # model parameters
-    parser.add_argument('--scale', type=float, default=0.5,
+    parser.add_argument('--scale', type=float, default=1.5,
                         help='scene scale (whole scene must lie in [-scale, scale]^3')
     parser.add_argument('--use_exposure', action='store_true', default=False,
                         help='whether to train in HDR-NeRF setting')
@@ -62,7 +62,7 @@ def get_opts():
     # misc
     parser.add_argument('--exp_name', type=str, default='exp',
                         help='experiment name')
-    parser.add_argument('--ckpt_path', type=str, default=None,
+    parser.add_argument('--ckpt_path', type=str, default='/mnt/w/WSL/Desktop/ngp_pl-master/ckpts/colmap/recon_s1.5/epoch=29_slim.ckpt',
                         help='pretrained checkpoint to load (including optimizers, etc)')
     parser.add_argument('--weight_path', type=str, default=None,
                         help='pretrained checkpoint to load (excluding optimizers, etc)')
