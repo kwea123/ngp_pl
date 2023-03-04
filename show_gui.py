@@ -85,7 +85,9 @@ class NGPGUI:
                             'T_threshold': 1e-2,
                             'exposure': torch.cuda.FloatTensor([dpg.get_value('_exposure')]),
                             'max_samples': 100,
-                            'exp_step_factor': exp_step_factor})
+                            'exp_step_factor': exp_step_factor,
+                            'bbox': [dpg.get_value('_xmax'),dpg.get_value('_ymax'),dpg.get_value('_zmax'),\
+                                     dpg.get_value('_xmin'),dpg.get_value('_ymin'),dpg.get_value('_zmin')]})
 
         rgb = rearrange(results["rgb"], "(h w) c -> h w c", h=self.H)
         depth = rearrange(results["depth"], "(h w) -> h w", h=self.H)
@@ -128,6 +130,21 @@ class NGPGUI:
             dpg.add_separator()
             dpg.add_text('no data', tag="_log_time")
             dpg.add_text('no data', tag="_samples_per_ray")
+            
+        ## parameters of croping bbox
+        with dpg.window(label="Bbox", tag="_Bbox_window", width=200, height=170):
+            dpg.add_slider_float(label="xmax", default_value=0.5,
+                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
+            dpg.add_slider_float(label="ymax", default_value=0.5,
+                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymax")
+            dpg.add_slider_float(label="zmax", default_value=0.5,
+                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmax")
+            dpg.add_slider_float(label="xmin", default_value=-0.5,
+                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
+            dpg.add_slider_float(label="ymin", default_value=-0.5,
+                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
+            dpg.add_slider_float(label="zmin", default_value=-0.5,
+                                 min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
