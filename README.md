@@ -1,5 +1,7 @@
 # ngp_pl
 
+[page](spphire.github.io/ngp_pl)
+
 ### 2023/3/4
 
 add function of picture capture, and cliping space with Bbox
