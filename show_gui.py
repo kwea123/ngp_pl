@@ -1,3 +1,5 @@
+import os
+
 import torch
 from opt import get_opts
 import numpy as np
@@ -12,6 +14,8 @@ from models.networks import NGP
 from models.rendering import render
 from train import depth2img
 from utils import load_ckpt
+
+import cv2
 
 import warnings; warnings.filterwarnings("ignore")
 
@@ -121,6 +125,10 @@ class NGPGUI:
         def callback_depth(sender, app_data):
             self.img_mode = 1-self.img_mode
 
+        def callback_save_pic(sender, app_data):
+            path=dpg.get_value('_save_path')
+            cv2.imwrite(path,self.render_cam(self.cam)[...,::-1]*255)
+
         ## control window ##
         with dpg.window(label="Control", tag="_control_window", width=200, height=130):
             with dpg.menu_bar():
@@ -134,18 +142,28 @@ class NGPGUI:
                     dpg.add_text('no data', tag="_samples_per_ray")
 
                 with dpg.menu(label="Bbox"):
-                    dpg.add_drag_float(label="xmax", default_value=0.5, speed=self.hparams.scale/100,
+                    with dpg.group(horizontal=True):
+                        dpg.add_drag_float(label="xmin", default_value=-0.5, speed=self.hparams.scale / 100,
+                                       min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
+                        dpg.add_drag_float(label="xmax", default_value=0.5, speed=self.hparams.scale/100,
                                          min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
-                    dpg.add_drag_float(label="ymax", default_value=0.5, speed=self.hparams.scale/100,
+                    with dpg.group(horizontal=True):
+                        dpg.add_drag_float(label="ymin", default_value=-0.5, speed=self.hparams.scale / 100,
+                                       min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
+                        dpg.add_drag_float(label="ymax", default_value=0.5, speed=self.hparams.scale/100,
                                          min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymax")
-                    dpg.add_drag_float(label="zmax", default_value=0.5, speed=self.hparams.scale/100,
+                    with dpg.group(horizontal=True):
+                        dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale / 100,
+                                       min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
+                        dpg.add_drag_float(label="zmax", default_value=0.5, speed=self.hparams.scale/100,
                                          min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmax")
-                    dpg.add_drag_float(label="xmin", default_value=-0.5, speed=self.hparams.scale/100,
-                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
-                    dpg.add_drag_float(label="ymin", default_value=-0.5, speed=self.hparams.scale/100,
-                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
-                    dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale/100,
-                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
+
+                with dpg.menu(label="Capture"):
+                    dpg.add_group(horizontal=True)
+                    dpg.add_input_text(label="save file's path", default_value=os.getcwd()+"/0.jpg", tag="_save_path")
+                    dpg.add_button(label="save picture", tag="_button_save",
+                                   callback=callback_save_pic)
+
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
