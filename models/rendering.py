@@ -65,6 +65,11 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
     opacity = torch.zeros(N_rays, device=device)
     depth = torch.zeros(N_rays, device=device)
     rgb = torch.zeros(N_rays, 3, device=device)
+    
+    # croping bbox
+    bbox = kwargs.get('bbox',[model.scale,model.scale,model.scale,\
+                             -model.scale,-model.scale,-model.scale])
+    bbox = torch.tensor(bbox, device=device)
 
     samples = total_samples = 0
     alive_indices = torch.arange(N_rays, device=device)
@@ -89,6 +94,9 @@ def __render_rays_test(model, rays_o, rays_d, hits_t, **kwargs):
         xyzs = rearrange(xyzs, 'n1 n2 c -> (n1 n2) c')
         dirs = rearrange(dirs, 'n1 n2 c -> (n1 n2) c')
         valid_mask = ~torch.all(dirs==0, dim=1)
+        valid_mask_max = torch.all(xyzs <= bbox[0:3], dim=1)
+        valid_mask_min = torch.all(xyzs >= bbox[3:6], dim=1)
+        valid_mask = valid_mask & valid_mask_max & valid_mask_min
         if valid_mask.sum()==0: break
 
         sigmas = torch.zeros(len(xyzs), device=device)
