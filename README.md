@@ -1,5 +1,9 @@
 # ngp_pl
 
+## 2023/3/4
+
+### add function of picture capture, and cliping space with Bbox
+
 ### Advertisement: Check out the latest integrated project [nerfstudio](https://github.com/nerfstudio-project/nerfstudio)! There are a lot of recent improvements on nerf related methods, including instant-ngp!
 
 <!-- ### Update 2022 July 29th: GUI prototype is available now (see following video)!
