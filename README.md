@@ -1,6 +1,6 @@
 # ngp_pl
 
-[page](spphire.github.io/ngp_pl)
+[page](https://spphire.github.io/ngp_pl)
 
 ### 2023/3/4
 
