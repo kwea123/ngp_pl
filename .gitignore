@@ -1,3 +1,7 @@
+.idea/
+*.jpg
+*.png
+
 /.vscode
 /.VSCodeCounter
 ckpts/

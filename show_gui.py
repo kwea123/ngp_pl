@@ -1,3 +1,5 @@
+import os
+
 import torch
 from opt import get_opts
 import numpy as np
@@ -12,6 +14,8 @@ from models.networks import NGP
 from models.rendering import render
 from train import depth2img
 from utils import load_ckpt
+
+import cv2
 
 import warnings; warnings.filterwarnings("ignore")
 
@@ -85,7 +89,9 @@ class NGPGUI:
                             'T_threshold': 1e-2,
                             'exposure': torch.cuda.FloatTensor([dpg.get_value('_exposure')]),
                             'max_samples': 100,
-                            'exp_step_factor': exp_step_factor})
+                            'exp_step_factor': exp_step_factor,
+                            'bbox': [dpg.get_value('_xmax'),dpg.get_value('_ymax'),dpg.get_value('_zmax'),\
+                                     dpg.get_value('_xmin'),dpg.get_value('_ymin'),dpg.get_value('_zmin')]})
 
         rgb = rearrange(results["rgb"], "(h w) c -> h w c", h=self.H)
         depth = rearrange(results["depth"], "(h w) -> h w", h=self.H)
@@ -119,15 +125,45 @@ class NGPGUI:
         def callback_depth(sender, app_data):
             self.img_mode = 1-self.img_mode
 
+        def callback_save_pic(sender, app_data):
+            path=dpg.get_value('_save_path')
+            cv2.imwrite(path,self.render_cam(self.cam)[...,::-1]*255)
+
         ## control window ##
-        with dpg.window(label="Control", tag="_control_window", width=200, height=150):
-            dpg.add_slider_float(label="exposure", default_value=0.2,
-                                 min_value=1/60, max_value=32, tag="_exposure")
-            dpg.add_button(label="show depth", tag="_button_depth",
-                            callback=callback_depth)
-            dpg.add_separator()
-            dpg.add_text('no data', tag="_log_time")
-            dpg.add_text('no data', tag="_samples_per_ray")
+        with dpg.window(label="Control", tag="_control_window", width=200, height=130):
+            with dpg.menu_bar():
+                with dpg.menu(label="Main"):
+                    dpg.add_slider_float(label="exposure", default_value=0.2,
+                                         min_value=1 / 60, max_value=32, tag="_exposure")
+                    dpg.add_button(label="show depth", tag="_button_depth",
+                                   callback=callback_depth)
+                    dpg.add_separator()
+                    dpg.add_text('no data', tag="_log_time")
+                    dpg.add_text('no data', tag="_samples_per_ray")
+
+                with dpg.menu(label="Bbox"):
+                    with dpg.group(horizontal=True):
+                        dpg.add_drag_float(label="xmin", default_value=-0.5, speed=self.hparams.scale / 100,
+                                       min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmin")
+                        dpg.add_drag_float(label="xmax", default_value=0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_xmax")
+                    with dpg.group(horizontal=True):
+                        dpg.add_drag_float(label="ymin", default_value=-0.5, speed=self.hparams.scale / 100,
+                                       min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymin")
+                        dpg.add_drag_float(label="ymax", default_value=0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_ymax")
+                    with dpg.group(horizontal=True):
+                        dpg.add_drag_float(label="zmin", default_value=-0.5, speed=self.hparams.scale / 100,
+                                       min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmin")
+                        dpg.add_drag_float(label="zmax", default_value=0.5, speed=self.hparams.scale/100,
+                                         min_value=-self.hparams.scale, max_value=self.hparams.scale, tag="_zmax")
+
+                with dpg.menu(label="Capture"):
+                    dpg.add_group(horizontal=True)
+                    dpg.add_input_text(label="save file's path", default_value=os.getcwd()+"/0.jpg", tag="_save_path")
+                    dpg.add_button(label="save picture", tag="_button_save",
+                                   callback=callback_save_pic)
+
 
         ## register camera handler ##
         def callback_camera_drag_rotate(sender, app_data):
