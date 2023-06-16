@@ -104,10 +104,18 @@ class RayMarcher(torch.autograd.Function):
     def backward(ctx, dL_drays_a, dL_dxyzs, dL_ddirs,
                  dL_ddeltas, dL_dts, dL_dtotal_samples):
         rays_a, ts = ctx.saved_tensors
+
+        _, indices = rays_a[:,1].sort()  # sort by sample idx for segment_csr
+        rays_a = rays_a[indices]
+        _, indices = rays_a[:,0].sort()  # sort by ray idx for input grads
+
         segments = torch.cat([rays_a[:, 1], rays_a[-1:, 1]+rays_a[-1:, 2]])
         dL_drays_o = segment_csr(dL_dxyzs, segments)
         dL_drays_d = \
             segment_csr(dL_dxyzs*rearrange(ts, 'n -> n 1')+dL_ddirs, segments)
+
+        dL_drays_o = dL_drays_o[indices]
+        dL_drays_d = dL_drays_d[indices]
 
         return dL_drays_o, dL_drays_d, None, None, None, None, None, None, None
 
